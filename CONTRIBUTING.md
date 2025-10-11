@@ -1,209 +1,65 @@
 # 🤝 Contributing to Budget Planner & Financial Goals Tracker
 
-Thank you for your interest in contributing to the Budget Planner & Financial Goals Tracker! This document provides guidelines and information for contributors.
-
-## 📋 Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
-- [Contribution Guidelines](#contribution-guidelines)
-- [Priority TODOs](#priority-todos)
-- [Coding Standards](#coding-standards)
-- [Testing Guidelines](#testing-guidelines)
-- [Pull Request Process](#pull-request-process)
-- [Issue Guidelines](#issue-guidelines)
-- [Release Process](#release-process)
+Thank you for your interest in contributing! This guide will help you get started.
 
 ## 📜 Code of Conduct
 
-This project follows a code of conduct that ensures a welcoming environment for all contributors. Please:
-
-- Be respectful and inclusive
-- Use welcoming and inclusive language
-- Accept constructive criticism gracefully
-- Focus on what's best for the community
-- Show empathy towards other community members
+Please be respectful, inclusive, and helpful to other contributors.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Python 3.8 or higher
 - Git
-- A GitHub account
-- Basic knowledge of Python, SQLite, and CLI applications
+- GitHub account
 
-### Fork and Clone
+### Setup
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
+1. **Fork and clone the repository**:
    ```bash
    git clone https://github.com/yourusername/budget-tracker.git
    cd budget-tracker
    ```
-3. **Add upstream remote**:
+
+2. **Install dependencies**:
    ```bash
-   git remote add upstream https://github.com/originalowner/budget-tracker.git
+   pip install -r requirements.txt
    ```
 
-## 🛠️ Development Setup
-
-### 1. Create Virtual Environment
-
-```bash
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-```
-
-### 2. Install Dependencies
-
-```bash
-# Install core dependencies
-pip install -r requirements.txt
-
-# Install development dependencies
-pip install pytest pytest-cov black flake8 mypy
-```
-
-### 3. Verify Installation
-
-```bash
-# Run the application
-python main.py
-
-# Run the demo
-python demo.py
-
-# Run tests (if available)
-pytest
-```
+3. **Test the installation**:
+   ```bash
+   python main.py
+   python demo.py
+   ```
 
 ## 📁 Project Structure
 
 ```
 budget_tracker/
-├── main.py                 # CLI entry point
+├── main.py                 # Main application
 ├── budget.py               # Income, expense, and budget management
 ├── goal_tracker.py         # Savings goals tracking
 ├── reports.py              # Report generation and charts
 ├── utils.py                # Utility functions
 ├── demo.py                 # Demo script
 ├── data/                   # Database storage
-│   └── budget_data.db      # SQLite database
 ├── reports/                # Generated reports
-├── tests/                  # Test files (to be created)
-├── requirements.txt        # Dependencies
-├── README.md              # Project documentation
-└── CONTRIBUTING.md        # This file
+└── requirements.txt        # Dependencies
 ```
 
-### Module Responsibilities
-
-- **`main.py`**: CLI interface, user interaction, menu handling
-- **`budget.py`**: Income/expense CRUD operations, budget management, database operations
-- **`goal_tracker.py`**: Savings goals management, progress tracking, goal analytics
-- **`reports.py`**: Chart generation, report creation, data visualization
-- **`utils.py`**: Validation, formatting, date handling, common utilities
-
-## 📝 Contribution Guidelines
+## 📝 How to Contribute
 
 ### Types of Contributions
-
-We welcome various types of contributions:
-
-1. **🐛 Bug Fixes**: Fix existing issues and bugs
-2. **✨ New Features**: Add new functionality
-3. **📚 Documentation**: Improve documentation and examples
-4. **🧪 Tests**: Add or improve test coverage
-5. **🎨 UI/UX**: Enhance user interface and experience
-6. **⚡ Performance**: Optimize code performance
-7. **🔧 Refactoring**: Improve code structure and maintainability
+- **🐛 Bug Fixes**: Fix existing issues
+- **✨ New Features**: Add new functionality
+- **📚 Documentation**: Improve documentation
+- **🎨 UI/UX**: Enhance user interface
 
 ### Before You Start
+1. Check existing issues to avoid duplicates
+2. Create an issue for significant changes
+3. Look at the Priority TODOs below
 
-1. **Check existing issues** to see if your idea is already being worked on
-2. **Create an issue** for significant changes to discuss the approach
-3. **Read the Priority TODOs** section below for high-priority items
-4. **Follow the coding standards** outlined in this document
-
-## 🎯 Priority TODOs
-
-These are high-priority items that contributors can work on:
-
-### 🔥 Critical Issues
-
-1. **Fix bug: Goal progress calculation sometimes shows incorrect percentages**
-   - **File**: `goal_tracker.py` (SavingsGoal class)
-   - **Description**: The `progress_percentage` property may not calculate correctly in edge cases
-   - **Priority**: High
-   - **Estimated Effort**: 2-4 hours
-
-2. **Add unit tests for budget and goal modules**
-   - **Files**: Create `tests/test_budget.py`, `tests/test_goal_tracker.py`
-   - **Description**: Add comprehensive test coverage for core functionality
-   - **Priority**: High
-   - **Estimated Effort**: 8-12 hours
-
-3. **Fix budget alerts may not trigger for edge cases**
-   - **File**: `budget.py` (BudgetManager class)
-   - **Description**: Budget alerts may not trigger correctly for certain scenarios
-   - **Priority**: High
-   - **Estimated Effort**: 3-5 hours
-
-### 🚀 New Features
-
-4. **Add export to CSV/XLSX option**
-   - **Description**: Export reports and data to CSV and Excel formats
-   - **Files**: New module `export.py`, update `reports.py`
-   - **Priority**: Medium
-   - **Estimated Effort**: 6-8 hours
-   - **Dependencies**: `openpyxl`, `pandas`
-
-5. **Add goal completion notifications**
-   - **Description**: Send email notifications when goals are completed
-   - **Files**: New module `notifications.py`, update `goal_tracker.py`
-   - **Priority**: Medium
-   - **Estimated Effort**: 8-10 hours
-   - **Dependencies**: `smtplib`, `email-validator`
-
-6. **Add support for multiple currencies**
-   - **Description**: Support different currencies for international users
-   - **Files**: Update `utils.py`, `budget.py`, `goal_tracker.py`
-   - **Priority**: Medium
-   - **Estimated Effort**: 10-12 hours
-
-7. **Add recurring transactions**
-   - **Description**: Set up recurring income and expense entries
-   - **Files**: New module `recurring.py`, update `budget.py`
-   - **Priority**: Medium
-   - **Estimated Effort**: 12-15 hours
-
-8. **Add bill reminders**
-   - **Description**: Set up bill payment reminders and notifications
-   - **Files**: New module `reminders.py`, update `main.py`
-   - **Priority**: Low
-   - **Estimated Effort**: 8-10 hours
-
-9. **Add investment tracking**
-   - **Description**: Track investment portfolios and returns
-   - **Files**: New module `investments.py`, update `reports.py`
-   - **Priority**: Low
-   - **Estimated Effort**: 15-20 hours
-
-10. **Add bank integration**
-    - **Description**: Connect with bank accounts for automatic transaction import
-    - **Files**: New module `bank_integration.py`
-    - **Priority**: Low
-    - **Estimated Effort**: 20-25 hours
-    - **Dependencies**: `requests`, `cryptography`
 
 ## 📏 Coding Standards
 
@@ -215,135 +71,8 @@ These are high-priority items that contributors can work on:
 - Use **descriptive variable names** (avoid abbreviations)
 - Keep **line length** under 88 characters (Black formatter standard)
 
-### Code Formatting
 
-We use **Black** for code formatting:
 
-```bash
-# Format code
-black budget_tracker/
-
-# Check formatting
-black --check budget_tracker/
-```
-
-### Linting
-
-We use **flake8** for linting:
-
-```bash
-# Run linter
-flake8 budget_tracker/
-
-# Run with specific rules
-flake8 --max-line-length=88 --extend-ignore=E203,W503 budget_tracker/
-```
-
-### Type Checking
-
-We use **mypy** for type checking:
-
-```bash
-# Run type checker
-mypy budget_tracker/
-```
-
-### Example Code Style
-
-```python
-def calculate_monthly_savings(income: float, expenses: float) -> float:
-    """
-    Calculate monthly savings from income and expenses.
-    
-    Args:
-        income: Monthly income amount
-        expenses: Monthly expenses amount
-        
-    Returns:
-        float: Monthly savings amount
-        
-    Raises:
-        ValueError: If income or expenses are negative
-    """
-    if income < 0 or expenses < 0:
-        raise ValueError("Income and expenses cannot be negative")
-    
-    return income - expenses
-```
-
-## 🧪 Testing Guidelines
-
-### Test Structure
-
-Create tests in the `tests/` directory:
-
-```
-tests/
-├── test_budget.py         # Tests for budget.py
-├── test_goal_tracker.py   # Tests for goal_tracker.py
-├── test_reports.py        # Tests for reports.py
-├── test_utils.py          # Tests for utils.py
-└── conftest.py            # Pytest configuration
-```
-
-### Test Naming Convention
-
-- Test functions should start with `test_`
-- Use descriptive names: `test_add_income_success`, `test_invalid_amount_raises_error`
-- Group related tests in classes: `class TestBudgetManager:`
-
-### Example Test
-
-```python
-import pytest
-from budget import BudgetManager, IncomeEntry
-
-class TestBudgetManager:
-    """Test cases for BudgetManager class."""
-    
-    def test_add_income_success(self):
-        """Test successful income addition."""
-        manager = BudgetManager()
-        income = IncomeEntry(
-            date="2024-01-01",
-            source="Salary",
-            amount=50000.0,
-            description="Monthly salary"
-        )
-        
-        income_id = manager.add_income(income)
-        assert income_id is not None
-        assert income_id > 0
-    
-    def test_add_income_invalid_data(self):
-        """Test income addition with invalid data."""
-        manager = BudgetManager()
-        income = IncomeEntry(
-            date="2024-01-01",
-            source="",  # Invalid empty source
-            amount=50000.0,
-            description="Monthly salary"
-        )
-        
-        with pytest.raises(ValueError, match="Income source cannot be empty"):
-            manager.add_income(income)
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=budget_tracker --cov-report=html
-
-# Run specific test file
-pytest tests/test_budget.py
-
-# Run with verbose output
-pytest -v
-```
 
 ## 🔄 Pull Request Process
 
@@ -365,7 +94,6 @@ pytest -v
    pytest
    flake8 budget_tracker/
    black --check budget_tracker/
-   mypy budget_tracker/
    ```
 
 6. **Commit your changes**:
@@ -389,16 +117,6 @@ When creating a PR, include:
 - **Screenshots**: If applicable (for UI changes)
 - **Checklist**: Ensure all items are completed
 
-### PR Checklist
-
-- [ ] Code follows the project's coding standards
-- [ ] Self-review of code has been performed
-- [ ] Code has been commented, particularly in hard-to-understand areas
-- [ ] Tests have been added/updated for new functionality
-- [ ] Documentation has been updated if necessary
-- [ ] All tests pass
-- [ ] No linting errors
-- [ ] Type checking passes
 
 ## 🐛 Issue Guidelines
 
@@ -434,26 +152,6 @@ When requesting features, include:
 - `priority: medium`: Medium priority issue
 - `priority: low`: Low priority issue
 
-## 🚀 Release Process
-
-### Version Numbering
-
-We use [Semantic Versioning](https://semver.org/):
-
-- **MAJOR**: Incompatible API changes
-- **MINOR**: New functionality in a backwards compatible manner
-- **PATCH**: Backwards compatible bug fixes
-
-### Release Checklist
-
-- [ ] All tests pass
-- [ ] Documentation is updated
-- [ ] Version number is updated
-- [ ] CHANGELOG.md is updated
-- [ ] Release notes are prepared
-- [ ] Tag is created
-- [ ] Release is published
-
 ## 📚 Additional Resources
 
 ### Documentation
@@ -464,13 +162,6 @@ We use [Semantic Versioning](https://semver.org/):
 - [SQLite Documentation](https://www.sqlite.org/docs.html)
 - [Pytest Documentation](https://docs.pytest.org/)
 
-### Development Tools
-
-- [Black Code Formatter](https://black.readthedocs.io/)
-- [Flake8 Linter](https://flake8.pycqa.org/)
-- [MyPy Type Checker](https://mypy.readthedocs.io/)
-- [Pytest Testing Framework](https://docs.pytest.org/)
-
 ## 💬 Getting Help
 
 If you need help or have questions:
@@ -479,20 +170,6 @@ If you need help or have questions:
 2. **Read the documentation** and code comments
 3. **Create a new issue** with detailed information
 4. **Join discussions** in GitHub Discussions
-5. **Ask questions** in the community forum
-
-## 🙏 Recognition
-
-Contributors will be recognized in:
-
-- **README.md** contributors section
-- **Release notes** for significant contributions
-- **GitHub contributors** page
-- **Project documentation**
-
-## 📄 License
-
-By contributing to this project, you agree that your contributions will be licensed under the same MIT License that covers the project.
 
 ---
 
