@@ -8,7 +8,7 @@ It provides a command-line interface for managing budgets, expenses, income, and
 
 import sys
 import os
-from typing import Optional, List, Tuple
+from typing import TypeVar, Callable
 from datetime import datetime, date
 
 from rich.console import Console
@@ -91,7 +91,34 @@ class BudgetTrackerCLI:
             except KeyboardInterrupt:
                 self.console.print("\n[yellow]Exiting...[/yellow]")
                 sys.exit(0)
-    
+
+    TParseReturnType = TypeVar("TParseReturnType")
+
+    def get_parsed_input(self, prompt: str,
+                         parse: Callable[[str], TParseReturnType] = None,
+                         default=None) -> TParseReturnType:
+        """Get user input and parse with provided function"""
+        while True:
+            user_input = Prompt.ask(prompt, default=default)
+            if parse is not None:
+                try:
+                    return parse(user_input)
+                except ValueError as e:
+                    self.console.print(f"[red]{e}[/red]")
+
+    def get_validated_input(self, prompt: str, error_message: str,
+                            validate: Callable[[str], bool] = None,
+                            default=None) -> str:
+        """Get user input and validate with provided function"""
+        while True:
+            user_input = Prompt.ask(prompt, default=default)
+            if validate is not None:
+                if not validate(user_input):
+                    self.console.print(
+                        f"[red]{error_message}[/red]")
+                else:
+                    return user_input
+
     def income_management_menu(self) -> None:
         """Handle income management operations."""
         while True:
@@ -117,38 +144,32 @@ class BudgetTrackerCLI:
             # Get income source
             common_sources = get_common_income_sources()
             self.console.print(f"Common sources: {', '.join(common_sources)}")
-            source = Prompt.ask("Income source")
-            
-            if not validate_category(source):
-                self.console.print("[red]Invalid source name.[/red]")
-                return
-            
+            source_input = self.get_validated_input("Income source",
+                                                    "Invalid source name.",
+                                                    validate=validate_category)
+
             # Get amount
-            amount_input = Prompt.ask("Amount")
-            try:
-                amount = parse_amount(amount_input)
-            except ValueError as e:
-                self.console.print(f"[red]Invalid amount: {e}[/red]")
-                return
-            
+            amount_input = self.get_parsed_input("Amount", parse=parse_amount)
+
             # Get date
-            date_input = Prompt.ask(f"Date (YYYY-MM-DD)", default=get_current_date_string())
-            if not validate_date(date_input):
-                self.console.print("[red]Invalid date format.[/red]")
-                return
-            
+            date_input = self.get_validated_input("Date (YYYY-MM-DD)",
+                                                  "Invalid date format",
+                                                  validate=validate_date,
+                                                  default=get_current_date_string())
+
             # Get description
-            description = Prompt.ask("Description (optional)", default="")
-            if not validate_description(description):
-                self.console.print("[red]Description too long.[/red]")
-                return
-            
+            description_input = self.get_validated_input(
+                "Description (optional)",
+                "Description too long",
+                validate=validate_description,
+                default="")
+
             # Create and add income entry
             income = IncomeEntry(
                 date=date_input,
-                source=source,
-                amount=amount,
-                description=description
+                source=source_input,
+                amount=amount_input,
+                description=description_input
             )
             
             income_id = self.budget_manager.add_income(income)
@@ -213,41 +234,36 @@ class BudgetTrackerCLI:
         try:
             # Get category
             common_categories = get_common_expense_categories()
-            self.console.print(f"Common categories: {', '.join(common_categories)}")
-            category = Prompt.ask("Expense category")
-            
-            if not validate_category(category):
-                self.console.print("[red]Invalid category name.[/red]")
-                return
-            
+            self.console.print(
+                f"Common categories: {', '.join(common_categories)}")
+            category_input = self.get_validated_input("Expense category",
+                                                      "Invalid category name.",
+                                                      validate=validate_category)
+
             # Get amount
-            amount_input = Prompt.ask("Amount")
-            try:
-                amount = parse_amount(amount_input)
-            except ValueError as e:
-                self.console.print(f"[red]Invalid amount: {e}[/red]")
-                return
-            
+            amount_input = self.get_parsed_input("Amount", parse=parse_amount)
+
             # Get date
-            date_input = Prompt.ask(f"Date (YYYY-MM-DD)", default=get_current_date_string())
-            if not validate_date(date_input):
-                self.console.print("[red]Invalid date format.[/red]")
-                return
-            
+            date_input = self.get_validated_input("Date (YYYY-MM-DD)",
+                                                  "Invalid date format",
+                                                  validate=validate_date,
+                                                  default=get_current_date_string())
+
             # Get description
-            description = Prompt.ask("Description (optional)", default="")
-            if not validate_description(description):
-                self.console.print("[red]Description too long.[/red]")
-                return
-            
+            description_input = self.get_validated_input(
+                "Description (optional)",
+                "Description too long",
+                validate=validate_description,
+                default="")
+
             # Create and add expense entry
             expense = ExpenseEntry(
                 date=date_input,
-                category=category,
-                amount=amount,
-                description=description
+                category=category_input,
+                amount=amount_input,
+                description=description_input
             )
-            
+
             expense_id = self.budget_manager.add_expense(expense)
             self.console.print(f"[green]✅ Expense entry added successfully with ID: {expense_id}[/green]")
             
