@@ -1,5 +1,11 @@
 import pytest
-from utils import validate_amount, parse_amount, format_currency, validate_date
+from utils import (
+    validate_amount,
+    parse_amount,
+    format_currency,
+    validate_date,
+    format_date,
+)
 
 
 def test_validate_amount_string_valid():
@@ -64,3 +70,22 @@ def test_validate_date_date_string_format_invalid():
 
 def test_validate_date_date_string_date_invalid():
     assert validate_date("2025-13-30") is False
+
+
+def test_format_date_date_string_valid_default_formats():
+    assert format_date("2025-10-30") == "October 30, 2025"
+
+
+def test_format_date_date_string_valid_alternate_formats():
+    assert format_date("30-10-2025", "%d-%m-%Y", "%Y-%m-%d") == "2025-10-30"
+
+
+def test_format_date_date_string_invalid_date_format():
+    test_date_string = "2025-10-30"
+    test_input_format = "%d-%m-%Y"
+    with pytest.raises(ValueError) as e:
+        format_date(test_date_string, test_input_format, "%Y-%m-%d")
+    assert (
+        f"Invalid date format: time data '{test_date_string}' does "
+        f"not match format '{test_input_format}'"
+    ) in str(e.value)
