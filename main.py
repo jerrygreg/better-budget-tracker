@@ -16,14 +16,17 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich import box
 from rich import print as rprint
+from skimage.color import deltaE_cmc
 
 from budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit
 from goal_tracker import GoalTracker, SavingsGoal
 from reports import ReportGenerator
 from utils import (
     validate_amount, validate_date, validate_category, validate_description,
-    parse_amount, format_currency, format_date, format_percentage,
+    parse_amount, parse_id,
+    format_currency, format_date, format_percentage,
     get_common_expense_categories, get_common_income_sources, get_common_goal_categories,
     get_current_date_string, get_month_start_date, get_month_end_date
 )
@@ -60,6 +63,7 @@ class BudgetTrackerCLI:
             "🎯 Savings Goals",
             "📈 Reports & Analytics",
             "🔍 Search & View Data",
+            "⚙️ Advanced Options",
             "❌ Exit"
         ]
         
@@ -74,6 +78,7 @@ class BudgetTrackerCLI:
             "Create and track savings goals",
             "Generate reports and charts",
             "Search and view all data",
+            "Do some advanced stuff",
             "Exit the application"
         ]
         
@@ -86,7 +91,7 @@ class BudgetTrackerCLI:
         """Get user's menu choice."""
         while True:
             try:
-                choice = Prompt.ask("Enter your choice", choices=["1", "2", "3", "4", "5", "6", "7"])
+                choice = Prompt.ask("Enter your choice", choices=["1", "2", "3", "4", "5", "6", "7", "8"])
                 return choice
             except KeyboardInterrupt:
                 self.console.print("\n[yellow]Exiting...[/yellow]")
@@ -125,15 +130,18 @@ class BudgetTrackerCLI:
             self.console.print("\n[bold blue]💰 Income Management[/bold blue]")
             self.console.print("1. Add Income Entry")
             self.console.print("2. View All Income")
-            self.console.print("3. Back to Main Menu")
+            self.console.print("3. Delete Income Entry")
+            self.console.print("4. Back to Main Menu")
             
-            choice = Prompt.ask("Choose an option", choices=["1", "2", "3"])
+            choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
             
             if choice == "1":
                 self.add_income_entry()
             elif choice == "2":
                 self.view_all_income()
             elif choice == "3":
+                self.delete_income_entry()
+            elif choice == "4":
                 break
     
     def add_income_entry(self) -> None:
@@ -209,6 +217,35 @@ class BudgetTrackerCLI:
         # Show summary
         total_income = sum(income.amount for income in income_entries)
         self.console.print(f"\n[bold green]Total Income: {format_currency(total_income)}[/bold green]")
+
+    def delete_income_entry(self) -> None:
+        """Delete an income entry."""
+        self.console.print("\n[bold green]Delete Income Entry[/bold green]")
+
+        try:
+            id_input = self.get_parsed_input("ID of income to delete", parse=parse_id)
+            deleted_entry = self.budget_manager.delete_income(id_input)
+            table = Table(title="[bold red]Deleted Income Entry[/bold red]", show_header=True, box=box.HORIZONTALS)
+            table.add_column("ID", style="cyan", no_wrap=True)
+            table.add_column("Date", style="red")
+            table.add_column("Source", style="red")
+            table.add_column("Amount", style="red", justify="right")
+            table.add_column("Description", style="red")
+            table.add_row(
+                str(deleted_entry.id),
+                format_date(deleted_entry.date, output_format='%Y-%m-%d'),
+                deleted_entry.source,
+                format_currency(deleted_entry.amount),
+                deleted_entry.description[:30] + "..."
+            )
+            self.console.print(table)
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
+        except Exception as e:
+            self.console.print(f"[red]❌ Error deleting income: {e}[/red]")
+
+
     
     def expense_management_menu(self) -> None:
         """Handle expense management operations."""
@@ -216,15 +253,18 @@ class BudgetTrackerCLI:
             self.console.print("\n[bold red]💸 Expense Management[/bold red]")
             self.console.print("1. Add Expense Entry")
             self.console.print("2. View All Expenses")
-            self.console.print("3. Back to Main Menu")
+            self.console.print("3. Delete Expense Entry")
+            self.console.print("4. Back to Main Menu")
             
-            choice = Prompt.ask("Choose an option", choices=["1", "2", "3"])
+            choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
             
             if choice == "1":
                 self.add_expense_entry()
             elif choice == "2":
                 self.view_all_expenses()
             elif choice == "3":
+                self.delete_expense_entry()
+            elif choice == "4":
                 break
     
     def add_expense_entry(self) -> None:
@@ -271,6 +311,33 @@ class BudgetTrackerCLI:
             self.console.print("\n[yellow]Operation cancelled.[/yellow]")
         except Exception as e:
             self.console.print(f"[red]❌ Error adding expense: {e}[/red]")
+
+    def delete_expense_entry(self) -> None:
+        """Delete an expense entry."""
+        self.console.print("\n[bold red]Delete expense Entry[/bold red]")
+
+        try:
+            id_input = self.get_parsed_input("ID of expense to delete", parse=parse_id)
+            deleted_entry = self.budget_manager.delete_expense(id_input)
+            table = Table(title="[bold red]Deleted expense Entry[/bold red]", show_header=True, box=box.HORIZONTALS)
+            table.add_column("ID", style="cyan", no_wrap=True)
+            table.add_column("Date", style="red")
+            table.add_column("Category", style="red")
+            table.add_column("Amount", style="red", justify="right")
+            table.add_column("Description", style="red")
+            table.add_row(
+                str(deleted_entry.id),
+                format_date(deleted_entry.date, output_format='%Y-%m-%d'),
+                deleted_entry.category,
+                format_currency(deleted_entry.amount),
+                deleted_entry.description[:30] + "..."
+            )
+            self.console.print(table)
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
+        except Exception as e:
+            self.console.print(f"[red]❌ Error deleting expense: {e}[/red]")
     
     def view_all_expenses(self) -> None:
         """View all expense entries."""
@@ -384,7 +451,7 @@ class BudgetTrackerCLI:
         
         for category, status in budget_status.items():
             status_icon = "🔴" if status['is_over_budget'] else "🟢"
-            remaining = format_currency(status['remaining']) if status['remaining'] > 0 else "₹0.00"
+            remaining = format_currency(status['remaining']) if status['remaining'] > 0 else "$0.00"
             
             table.add_row(
                 category,
@@ -754,7 +821,71 @@ class BudgetTrackerCLI:
         """
         
         self.console.print(Panel(summary_text, title="Monthly Summary", border_style="blue"))
-    
+
+    def advanced_options_menu(self) -> None:
+        """Handle advanced operations."""
+        while True:
+            self.console.print("\n[bold dark_orange]⚙️ Advanced Options[/bold dark_orange]")
+            self.console.print("1. Reindex Tables")
+            self.console.print("2. Back to Main Menu")
+
+            choice = Prompt.ask("Choose an option", choices=["1", "2"])
+
+            if choice == "1":
+                self.reindex_tables()
+            elif choice == "2":
+                break
+
+    def reindex_tables(self) -> None:
+        """Menu to select which table to reindex."""
+        try:
+            while True:
+                self.console.print("\n[italic dark_orange]Which table do you want to reindex?[/italic dark_orange]")
+                self.console.print("[bold red]⚠️ WARNING: This is a destructive operation. It will ruin any connections between tables[/bold red]")
+                self.console.print("1. Income Table")
+                self.console.print("2. Expense Table")
+                self.console.print("3. Back to Advanced Options")
+
+                choice = Prompt.ask("Choose an option", choices=["1", "2", "3"])
+
+                if choice == "1":
+                    confirmation = self.ask_confirmation("Yes", "No")
+                    if confirmation:
+                        self.budget_manager.reindex_table("income")
+                        self.console.print("[green]Income Table Reindexed!![/green]")
+
+                elif choice == "2":
+                    confirmation = self.ask_confirmation("Yes", "No")
+                    if confirmation:
+                        self.budget_manager.reindex_table("expenses")
+                        self.console.print("[green]Expense Table Reindexed!![/green]")
+
+                elif choice == "3":
+                    break
+
+                else:
+                    continue
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
+        except Exception as e:
+            self.console.print(f"[red]❌ Error re-indexing: {e}[/red]")
+
+    def ask_confirmation(self, yes = "Yes", no = "No") -> bool:
+        """Ask yes-no confirmation."""
+        while True:
+            self.console.print("\n[bold red]Are you sure?[/bold red]")
+            self.console.print(f"{yes}. Confirm")
+            self.console.print(f"{no}. Deny")
+
+            choice = Prompt.ask("Choose an option", choices=[f"{yes}", f"{no}"])
+
+            if choice == yes:
+                return True
+            elif choice == no:
+                return False
+
+
     def run(self) -> None:
         """Run the main application loop."""
         self.display_welcome()
@@ -777,6 +908,8 @@ class BudgetTrackerCLI:
                 elif choice == "6":
                     self.search_menu()
                 elif choice == "7":
+                    self.advanced_options_menu()
+                elif choice == "8":
                     self.console.print("\n[bold green]Thank you for using Budget Tracker![/bold green]")
                     self.running = False
                 

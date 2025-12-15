@@ -57,8 +57,30 @@ def parse_amount(amount_input: str) -> float:
     except ValueError:
         raise ValueError(f"Invalid amount format: {amount_input}")
 
+def parse_id(id_input: str) -> int:
+    """
+    Parse an id string and return a int value.
 
-def format_currency(amount: float, currency_symbol: str = "₹") -> str:
+    Args:
+        id_input: id string (e.g., "1","123456")
+
+    Returns:
+        int: Parsed id value
+
+    Raises:
+        ValueError: If id cannot be parsed
+    """
+    if not id_input:
+        raise ValueError("ID input cannot be empty")
+
+    try:
+        return int(id_input)
+    except ValueError:
+        raise ValueError(f"Invalid ID format: {id_input}")
+
+
+
+def format_currency(amount: float, currency_symbol: str = "$") -> str:
     """
     Format a float amount as currency string.
     

@@ -10,12 +10,24 @@ import os
 from datetime import datetime, date
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
+
+from sympy.core.facts import InconsistentAssumptions
+
 from utils import validate_amount, validate_date, format_currency, get_current_date_string
 
 
 @dataclass
 class IncomeEntry:
-    """Data class representing an income entry."""
+    """
+    Data class representing an income entry.
+
+    Attributes:
+        id: The ID of the income entry.
+        date: The date the income entry was created.
+        source: The source of the income entry.
+        amount: The amount of the income entry.
+        description: The description of the income entry.
+    """
     id: Optional[int] = None
     date: str = ""
     source: str = ""
@@ -117,7 +129,67 @@ class BudgetManager:
             """)
             
             conn.commit()
-    
+
+    def reindex_table(self, table_name: str) -> bool:
+        """
+        Re-indexes the primary key for a given table to be sequential from 1.
+
+        ⚠️ WARNING: This is a destructive operation. It should not be used on
+        tables that are referenced by foreign keys in other tables.
+
+        Args:
+            table_name: The name of the table to re-index (e.g., 'income').
+
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        temp_table_name = f"{table_name}_temp"
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+
+                # Start a transaction
+                cursor.execute("BEGIN TRANSACTION;")
+
+                # 1. Get the original table's CREATE statement
+                cursor.execute(f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+                create_sql = cursor.fetchone()[0]
+
+                # 2. Create the temporary table with the same schema
+                temp_create_sql = create_sql.replace(f"CREATE TABLE \"{table_name}\"", f"CREATE TABLE \"{temp_table_name}\"")
+                cursor.execute(temp_create_sql)
+
+                # 3. Get column names, excluding the 'id' primary key
+                cursor.execute(f"PRAGMA table_info({table_name})")
+                columns = [row[1] for row in cursor.fetchall() if row[1] != 'id']
+                column_str = ", ".join(columns)
+
+                # 4. Copy data from the old table to the new one, ordered by the old id
+                # The new table will auto-generate sequential IDs from 1.
+                cursor.execute(f"""
+                        INSERT INTO {temp_table_name} ({column_str})
+                        SELECT {column_str} FROM {table_name} ORDER BY id ASC
+                    """)
+
+                # 5. Drop the original table
+                cursor.execute(f"DROP TABLE {table_name}")
+
+                # 6. Rename the temporary table to the original name
+                cursor.execute(f"ALTER TABLE {temp_table_name} RENAME TO {table_name}")
+
+                # 7. If using AUTOINCREMENT, reset the sequence counter
+                cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table_name}'")
+
+                # Commit the transaction
+                conn.commit()
+                return True
+
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error during re-indexing: {e}")
+            # If an error occurs, the transaction will be automatically rolled back
+            # by the 'with' statement context manager.
+
     # Income operations
     def add_income(self, income: IncomeEntry) -> int:
         """
@@ -138,6 +210,53 @@ class BudgetManager:
                 """, (income.date, income.source, income.amount, income.description))
                 conn.commit()
                 return cursor.lastrowid
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error: {e}")
+
+    def delete_income(self, id_input: int) -> IncomeEntry:
+        """
+        Add a new income entry to the database.
+
+        Args:
+            id_input: ID of the income entry to delete
+
+        Returns:
+            IncomeEntry: The deleted income entry
+
+        Raises:
+            ValueError: If the income entry does not exist
+            AssertionError: If it deletes multiple entries
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                # Get deleted contents
+                cursor.execute("""
+                    SELECT * FROM income WHERE id = ?
+                """, (id_input,))
+
+                deleted_row = cursor.fetchone()
+
+                # Delete contents
+                cursor.execute("""
+                    DELETE FROM income WHERE id = ?
+                """, (id_input, ))
+                conn.commit()
+                n_deleted_rows = cursor.rowcount  # will be 1 if delete works
+
+                assert(n_deleted_rows <= 1), "Multiple rows deleted" # Should never have duplicate ids
+                if n_deleted_rows == 1:
+                    # return deleted entry
+                    return IncomeEntry(
+                        id=deleted_row[0],
+                        date=deleted_row[1],
+                        source=deleted_row[2],
+                        amount=deleted_row[3],
+                        description=deleted_row[4]
+                    )
+                else:
+                    raise KeyError(f"Income entry with id {id_input} was not found")
+
         except sqlite3.Error as e:
             raise ValueError(f"Database error: {e}")
     
@@ -222,6 +341,53 @@ class BudgetManager:
                 """, (expense.date, expense.category, expense.amount, expense.description))
                 conn.commit()
                 return cursor.lastrowid
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error: {e}")
+
+    def delete_expense(self, id_input: int) -> ExpenseEntry:
+        """
+        Add a new income entry to the database.
+
+        Args:
+            id_input: ID of the expense entry to delete
+
+        Returns:
+            ExpenseEntry: The deleted expense entry
+
+        Raises:
+            ValueError: If the expense entry does not exist
+            AssertionError: If it deletes multiple entries
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                # Get deleted contents
+                cursor.execute("""
+                    SELECT * FROM expenses WHERE id = ?
+                """, (id_input, ))
+
+                deleted_row = cursor.fetchone()
+
+                # Delete contents
+                cursor.execute("""
+                    DELETE FROM expenses WHERE id = ?
+                """, (id_input, ))
+                conn.commit()
+                n_deleted_rows = cursor.rowcount  # will be 1 if delete works
+
+                assert(n_deleted_rows <= 1), "Multiple rows deleted" # Should never have duplicate ids
+                if n_deleted_rows == 1:
+                    # return deleted entry
+                    return ExpenseEntry(
+                        id=deleted_row[0],
+                        date=deleted_row[1],
+                        category=deleted_row[2],
+                        amount=deleted_row[3],
+                        description=deleted_row[4]
+                    )
+                else:
+                    raise KeyError(f"Expense entry with id {id_input} was not found")
+
         except sqlite3.Error as e:
             raise ValueError(f"Database error: {e}")
     

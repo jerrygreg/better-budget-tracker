@@ -181,7 +181,7 @@ def create_sample_data():
     for income in sample_income:
         try:
             income_id = budget_manager.add_income(income)
-            print(f"✅ Added income: {income.source} - ₹{income.amount:,.2f} (ID: {income_id})")
+            print(f"✅ Added income: {income.source} - ${income.amount:,.2f} (ID: {income_id})")
         except Exception as e:
             print(f"❌ Failed to add income {income.source}: {e}")
     
@@ -189,7 +189,7 @@ def create_sample_data():
     for expense in sample_expenses:
         try:
             expense_id = budget_manager.add_expense(expense)
-            print(f"✅ Added expense: {expense.category} - ₹{expense.amount:,.2f} (ID: {expense_id})")
+            print(f"✅ Added expense: {expense.category} - ${expense.amount:,.2f} (ID: {expense_id})")
         except Exception as e:
             print(f"❌ Failed to add expense {expense.category}: {e}")
     
@@ -197,7 +197,7 @@ def create_sample_data():
     for budget in sample_budgets:
         try:
             budget_id = budget_manager.set_budget_limit(budget)
-            print(f"✅ Set budget limit: {budget.category} - ₹{budget.monthly_limit:,.2f} (ID: {budget_id})")
+            print(f"✅ Set budget limit: {budget.category} - ${budget.monthly_limit:,.2f} (ID: {budget_id})")
         except Exception as e:
             print(f"❌ Failed to set budget limit {budget.category}: {e}")
     
@@ -205,7 +205,7 @@ def create_sample_data():
     for goal in sample_goals:
         try:
             goal_id = goal_tracker.add_goal(goal)
-            print(f"✅ Added goal: {goal.name} - ₹{goal.target_amount:,.2f} (ID: {goal_id})")
+            print(f"✅ Added goal: {goal.name} - ${goal.target_amount:,.2f} (ID: {goal_id})")
         except Exception as e:
             print(f"❌ Failed to add goal {goal.name}: {e}")
     
@@ -224,9 +224,9 @@ def demonstrate_features(budget_manager, goal_tracker):
     
     print(f"\n1. MONTHLY FINANCIAL SUMMARY:")
     print("-" * 35)
-    print(f"Total Income: ₹{monthly_summary['total_income']:,.2f}")
-    print(f"Total Expenses: ₹{monthly_summary['total_expenses']:,.2f}")
-    print(f"Net Income: ₹{monthly_summary['net_income']:,.2f}")
+    print(f"Total Income: ${monthly_summary['total_income']:,.2f}")
+    print(f"Total Expenses: ${monthly_summary['total_expenses']:,.2f}")
+    print(f"Net Income: ${monthly_summary['net_income']:,.2f}")
     print(f"Savings Rate: {monthly_summary['savings_rate']:.1f}%")
     
     # Budget status
@@ -235,7 +235,7 @@ def demonstrate_features(budget_manager, goal_tracker):
     budget_status = budget_manager.get_budget_status(current_date.year, current_date.month)
     for category, status in budget_status.items():
         status_icon = "🔴" if status['is_over_budget'] else "🟢"
-        print(f"{status_icon} {category}: ₹{status['spent']:,.2f} / ₹{status['limit']:,.2f} "
+        print(f"{status_icon} {category}: ${status['spent']:,.2f} / ${status['limit']:,.2f} "
               f"({status['percentage_used']:.1f}%)")
     
     # Overspending alerts
@@ -244,7 +244,7 @@ def demonstrate_features(budget_manager, goal_tracker):
         print(f"\n3. OVERSPENDING ALERTS:")
         print("-" * 25)
         for alert in overspending_alerts:
-            print(f"⚠️  {alert['category']}: Over by ₹{alert['overspent']:,.2f} "
+            print(f"⚠️  {alert['category']}: Over by ${alert['overspent']:,.2f} "
                   f"({alert['percentage_over']:.1f}% over limit)")
     
     # Category breakdown
@@ -254,7 +254,7 @@ def demonstrate_features(budget_manager, goal_tracker):
     total_expenses = sum(category_summary.values())
     for category, amount in sorted(category_summary.items(), key=lambda x: x[1], reverse=True):
         percentage = (amount / total_expenses * 100) if total_expenses > 0 else 0
-        print(f"{category}: ₹{amount:,.2f} ({percentage:.1f}%)")
+        print(f"{category}: ${amount:,.2f} ({percentage:.1f}%)")
     
     # Goals summary
     print(f"\n5. SAVINGS GOALS SUMMARY:")
@@ -264,9 +264,9 @@ def demonstrate_features(budget_manager, goal_tracker):
     print(f"Active Goals: {goals_summary['active_goals']}")
     print(f"Completed Goals: {goals_summary['completed_goals']}")
     print(f"Overdue Goals: {goals_summary['overdue_goals']}")
-    print(f"Total Target Amount: ₹{goals_summary['total_target_amount']:,.2f}")
-    print(f"Total Current Amount: ₹{goals_summary['total_current_amount']:,.2f}")
-    print(f"Total Remaining: ₹{goals_summary['total_remaining']:,.2f}")
+    print(f"Total Target Amount: ${goals_summary['total_target_amount']:,.2f}")
+    print(f"Total Current Amount: ${goals_summary['total_current_amount']:,.2f}")
+    print(f"Total Remaining: ${goals_summary['total_remaining']:,.2f}")
     print(f"Overall Progress: {goals_summary['overall_progress']:.1f}%")
     
     # Active goals details
@@ -277,7 +277,7 @@ def demonstrate_features(budget_manager, goal_tracker):
         for goal in active_goals:
             status_icon = "🔴" if goal.is_overdue else "🟡"
             print(f"{status_icon} {goal.name} ({goal.category})")
-            print(f"   Progress: ₹{goal.current_amount:,.2f} / ₹{goal.target_amount:,.2f} "
+            print(f"   Progress: ${goal.current_amount:,.2f} / ${goal.target_amount:,.2f} "
                   f"({goal.progress_percentage:.1f}%)")
             print(f"   Target Date: {goal.target_date} ({goal.days_remaining} days remaining)")
     
@@ -287,7 +287,7 @@ def demonstrate_features(budget_manager, goal_tracker):
         print(f"\n7. COMPLETED GOALS:")
         print("-" * 20)
         for goal in completed_goals:
-            print(f"✅ {goal.name} ({goal.category}) - ₹{goal.target_amount:,.2f}")
+            print(f"✅ {goal.name} ({goal.category}) - ${goal.target_amount:,.2f}")
 
 
 def generate_sample_reports(budget_manager, goal_tracker):
