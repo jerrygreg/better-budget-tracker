@@ -11,20 +11,19 @@ import os
 from typing import TypeVar, Callable
 from datetime import datetime, date
 
+from aem.mactypes import Alias
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import box
-from rich import print as rprint
-from skimage.color import deltaE_cmc
 
-from budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit
+from budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit, AliasEntry
 from goal_tracker import GoalTracker, SavingsGoal
 from reports import ReportGenerator
 from utils import (
-    validate_amount, validate_date, validate_category, validate_description,
+    validate_amount, validate_date, validate_category, validate_description, validate_alias,
     parse_amount, parse_id,
     format_currency, format_date, format_percentage,
     get_common_expense_categories, get_common_income_sources, get_common_goal_categories,
@@ -78,7 +77,7 @@ class BudgetTrackerCLI:
             "Create and track savings goals",
             "Generate reports and charts",
             "Search and view all data",
-            "Do some advanced stuff",
+            "Creating aliases, reindexing tables, ect.",
             "Exit the application"
         ]
         
@@ -156,6 +155,11 @@ class BudgetTrackerCLI:
                                                     "Invalid source name.",
                                                     validate=validate_category)
 
+            alias = self.budget_manager.get_alias(alias=source_input,table="income")
+            if alias:
+                self.console.print(f"[italic green]🏷️ [bold]{source_input}[/bold] aliased as [bold]{alias.full_name}[/bold][/italic green]")
+                source_input = alias.full_name
+
             # Get amount
             amount_input = self.get_parsed_input("Amount", parse=parse_amount)
 
@@ -177,7 +181,8 @@ class BudgetTrackerCLI:
                 date=date_input,
                 source=source_input,
                 amount=amount_input,
-                description=description_input
+                description=description_input,
+                alias=alias.alias if alias else None,
             )
             
             income_id = self.budget_manager.add_income(income)
@@ -207,7 +212,7 @@ class BudgetTrackerCLI:
             table.add_row(
                 str(income.id),
                 format_date(income.date, output_format='%Y-%m-%d'),
-                income.source,
+                f"[italic]{income.source}[/italic]" if income.alias else income.source,
                 format_currency(income.amount),
                 income.description[:30] + "..." if len(income.description) > 30 else income.description
             )
@@ -280,6 +285,11 @@ class BudgetTrackerCLI:
                                                       "Invalid category name.",
                                                       validate=validate_category)
 
+            alias = self.budget_manager.get_alias(alias=category_input,table="expenses")
+            if alias:
+                self.console.print(f"[italic green]🏷️ [bold]{category_input}[/bold] aliased as [bold]{alias.full_name}[/bold][/italic green]")
+                category_input = alias.full_name
+
             # Get amount
             amount_input = self.get_parsed_input("Amount", parse=parse_amount)
 
@@ -301,7 +311,8 @@ class BudgetTrackerCLI:
                 date=date_input,
                 category=category_input,
                 amount=amount_input,
-                description=description_input
+                description=description_input,
+                alias=alias.full_name if alias else None
             )
 
             expense_id = self.budget_manager.add_expense(expense)
@@ -358,7 +369,7 @@ class BudgetTrackerCLI:
             table.add_row(
                 str(expense.id),
                 format_date(expense.date, output_format='%Y-%m-%d'),
-                expense.category,
+                f"[italic]{expense.category}[/italic]" if expense.alias else expense.category,
                 format_currency(expense.amount),
                 expense.description[:30] + "..." if len(expense.description) > 30 else expense.description
             )
@@ -826,15 +837,125 @@ class BudgetTrackerCLI:
         """Handle advanced operations."""
         while True:
             self.console.print("\n[bold dark_orange]⚙️ Advanced Options[/bold dark_orange]")
-            self.console.print("1. Reindex Tables")
-            self.console.print("2. Back to Main Menu")
+            self.console.print("1. Create and Manage Aliases")
+            self.console.print("2. Reindex Tables")
+            self.console.print("3. Back to Main Menu")
 
-            choice = Prompt.ask("Choose an option", choices=["1", "2"])
+            choice = Prompt.ask("Choose an option", choices=["1", "2", "3"])
 
             if choice == "1":
-                self.reindex_tables()
+                self.alias_menu()
             elif choice == "2":
+                self.reindex_tables()
+            elif choice == "3":
                 break
+
+    def alias_menu(self) -> None:
+        """A menu to handle alias options."""
+        while True:
+            self.console.print("\n[bold gold3]🏷️ Alias Management[/bold gold3]")
+            self.console.print("1. Create Alias")
+            self.console.print("2. View Aliases")
+            self.console.print("3. Delete Alias")
+            self.console.print("4. Back to Options Menu")
+
+            choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
+
+            if choice == "1":
+                self.add_alias_entry()
+            elif choice == "2":
+                self.view_all_aliases()
+            elif choice == "3":
+                self.delete_alias_entry()
+            elif choice == "4":
+                break
+
+    def add_alias_entry(self) -> None:
+        """Add an alias entry."""
+        try:
+            alias_name = self.get_validated_input("Name of alias",
+                                                    "Invalid name.",
+                                                    validate=validate_alias)
+            full_name = self.get_validated_input("Full expanded name of alias",
+                                                    "Invalid name.",
+                                                    validate=validate_alias)
+            table = Prompt.ask("What table is this for?", choices=["income", "expenses", "all"])
+
+            # Alias Entry
+            if table == "all":
+                alias_income = AliasEntry(alias=alias_name, full_name=full_name, type="income")
+                self.budget_manager.add_alias(alias_income)
+                alias_expenses = AliasEntry(alias=alias_name, full_name=full_name, type="expenses")
+                self.budget_manager.add_alias(alias_expenses)
+            else:
+                alias = AliasEntry(alias=alias_name, full_name=full_name, type=table)
+                self.budget_manager.add_alias(alias)
+
+            self.console.print(f"[green]✅ Alias entry added successfully with '{full_name}' aliased as '{alias_name}'[/green]")
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
+        except Exception as e:
+            self.console.print(f"[red]❌ Error adding alias: {e}[/red]")
+
+    def view_all_aliases(self) -> None:
+        """View all aliases."""
+
+        alias_table = Prompt.ask("Which aliases do you want to see?", choices=["income", "expenses", "all"])
+
+        aliases = self.budget_manager.get_all_aliases(alias_table)
+
+        if not aliases:
+            if alias_table == "all":
+                self.console.print(f"[yellow]No aliases found.[/yellow]")
+            else:
+                self.console.print(f"[yellow]No aliases found for '{alias_table}'.[/yellow]")
+            return
+
+        table = Table(title=f"{alias_table.capitalize()} Aliases", show_header=True, header_style="bold gold3")
+        table.add_column("ID", style="cyan", no_wrap=True)
+        table.add_column("Alias", style="dark_orange")
+        table.add_column("Full Name", style="yellow")
+        table.add_column("Type", style="white")
+
+        for alias in aliases:
+            table.add_row(
+                str(alias.id),
+                alias.alias,
+                alias.full_name,
+                alias.type
+            )
+
+        self.console.print(table)
+
+    def delete_alias_entry(self) -> None:
+        """Delete an alias entry."""
+        self.console.print("\n[bold red]Delete Alias Entry[/bold red]")
+
+        try:
+            alias_name = self.get_validated_input("Name of alias to delete",
+                                                  "Invalid name.",
+                                                  validate=validate_alias)
+            table = Prompt.ask("Associated table", choices=["income", "expenses"])
+
+            deleted_entry = self.budget_manager.delete_alias(alias_name, table)
+            table = Table(title="[bold red]Deleted Alias Entry[/bold red]", show_header=True, box=box.HORIZONTALS)
+            table.add_column("ID", style="cyan", no_wrap=True)
+            table.add_column("Alias", style="red")
+            table.add_column("Full Name", style="red")
+            table.add_column("Type", style="red")
+            table.add_row(
+                str(deleted_entry.id),
+                deleted_entry.alias,
+                deleted_entry.full_name,
+                deleted_entry.type
+            )
+            self.console.print(table)
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
+        except Exception as e:
+            self.console.print(f"[red]❌ Error deleting alias: {e}[/red]")
 
     def reindex_tables(self) -> None:
         """Menu to select which table to reindex."""

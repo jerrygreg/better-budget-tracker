@@ -323,6 +323,26 @@ def validate_category(category: str) -> bool:
     return True
 
 
+def validate_alias(alias: str) -> bool:
+    """
+    Validate alias name.
+
+    Args:
+        alias: Category to validate
+
+    Returns:
+        bool: True if category is valid, False otherwise
+    """
+    if not alias or not alias.strip():
+        return False
+
+    # Check for reasonable length
+    if len(alias.strip()) < 1 or len(alias.strip()) > 50:
+        return False
+
+    return True
+
+
 def validate_description(description: str) -> bool:
     """
     Validate description text.

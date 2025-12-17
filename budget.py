@@ -27,12 +27,14 @@ class IncomeEntry:
         source: The source of the income entry.
         amount: The amount of the income entry.
         description: The description of the income entry.
+        alias: The alias of the source, if an alias was used
     """
     id: Optional[int] = None
     date: str = ""
     source: str = ""
     amount: float = 0.0
     description: str = ""
+    alias: Optional[str] = None
 
     def __post_init__(self):
         """Validate data after initialization."""
@@ -43,6 +45,32 @@ class IncomeEntry:
 
 
 @dataclass
+class AliasEntry:
+    """
+    Data class representing a category/source alias.
+
+    Attributes:
+        id: The ID of the alias entry.
+        alias: The alias.
+        full_name: The full name of the alias.
+        type: The table this is associated with.
+    """
+    id: Optional[int] = None
+    alias: str = ""
+    full_name: str = ""
+    type: str = ""  # 'income' or 'expense'
+
+    def __post_init__(self):
+        """Validate data after initialization."""
+        if not self.alias.strip():
+            raise ValueError("Alias cannot be empty")
+        elif not self.full_name.strip():
+            raise ValueError("Full name cannot be empty")
+        if self.type not in ['income', 'expenses']:
+            raise ValueError("Alias type must be 'income' or 'expenses'")
+
+
+@dataclass
 class ExpenseEntry:
     """Data class representing an expense entry."""
     id: Optional[int] = None
@@ -50,6 +78,7 @@ class ExpenseEntry:
     category: str = ""
     amount: float = 0.0
     description: str = ""
+    alias: Optional[str] = None
 
     def __post_init__(self):
         """Validate data after initialization."""
@@ -95,31 +124,45 @@ class BudgetManager:
             
             # Income table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS income (
+                CREATE TABLE IF NOT EXISTS \"income\" (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     date TEXT NOT NULL,
                     source TEXT NOT NULL,
                     amount REAL NOT NULL,
                     description TEXT DEFAULT '',
+                    alias TEXT DEFAULT '',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # Aliases table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS \"aliases\" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    alias TEXT NOT NULL,
+                    full_name TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (alias, type)
                 )
             """)
             
             # Expenses table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS expenses (
+                CREATE TABLE IF NOT EXISTS \"expenses\" (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     date TEXT NOT NULL,
                     category TEXT NOT NULL,
                     amount REAL NOT NULL,
                     description TEXT DEFAULT '',
+                    alias TEXT DEFAULT '',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
             # Budget limits table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS budget_limits (
+                CREATE TABLE IF NOT EXISTS \"budget_limits\" (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     category TEXT NOT NULL UNIQUE,
                     monthly_limit REAL NOT NULL,
@@ -205,9 +248,9 @@ class BudgetManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO income (date, source, amount, description)
-                    VALUES (?, ?, ?, ?)
-                """, (income.date, income.source, income.amount, income.description))
+                    INSERT INTO income (date, source, amount, description, alias)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (income.date, income.source, income.amount, income.description, income.alias))
                 conn.commit()
                 return cursor.lastrowid
         except sqlite3.Error as e:
@@ -240,7 +283,7 @@ class BudgetManager:
                 # Delete contents
                 cursor.execute("""
                     DELETE FROM income WHERE id = ?
-                """, (id_input, ))
+                """, (id_input,))
                 conn.commit()
                 n_deleted_rows = cursor.rowcount  # will be 1 if delete works
 
@@ -252,7 +295,8 @@ class BudgetManager:
                         date=deleted_row[1],
                         source=deleted_row[2],
                         amount=deleted_row[3],
-                        description=deleted_row[4]
+                        description=deleted_row[4] or "",
+                        alias=deleted_row[5] or ""
                     )
                 else:
                     raise KeyError(f"Income entry with id {id_input} was not found")
@@ -275,7 +319,8 @@ class BudgetManager:
                         date=row[1],
                         source=row[2],
                         amount=row[3],
-                        description=row[4] or ""
+                        description=row[4] or "",
+                        alias=row[5] or None
                     )
                     income_entries.append(income)
         except sqlite3.Error as e:
@@ -302,7 +347,8 @@ class BudgetManager:
                         date=row[1],
                         source=row[2],
                         amount=row[3],
-                        description=row[4] or ""
+                        description=row[4] or "",
+                        alias=row[5] or None
                     )
                     income_entries.append(income)
         except sqlite3.Error as e:
@@ -336,9 +382,9 @@ class BudgetManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO expenses (date, category, amount, description)
-                    VALUES (?, ?, ?, ?)
-                """, (expense.date, expense.category, expense.amount, expense.description))
+                    INSERT INTO expenses (date, category, amount, description, alias)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (expense.date, expense.category, expense.amount, expense.description, expense.alias))
                 conn.commit()
                 return cursor.lastrowid
         except sqlite3.Error as e:
@@ -383,7 +429,8 @@ class BudgetManager:
                         date=deleted_row[1],
                         category=deleted_row[2],
                         amount=deleted_row[3],
-                        description=deleted_row[4]
+                        description=deleted_row[4] or "",
+                        alias=deleted_row[5] or None
                     )
                 else:
                     raise KeyError(f"Expense entry with id {id_input} was not found")
@@ -406,7 +453,8 @@ class BudgetManager:
                         date=row[1],
                         category=row[2],
                         amount=row[3],
-                        description=row[4] or ""
+                        description=row[4] or "",
+                        alias=row[5] or None
                     )
                     expense_entries.append(expense)
         except sqlite3.Error as e:
@@ -429,7 +477,8 @@ class BudgetManager:
                         date=row[1],
                         category=row[2],
                         amount=row[3],
-                        description=row[4] or ""
+                        description=row[4] or "",
+                        alias=row[5] or None
                     )
                     expense_entries.append(expense)
         except sqlite3.Error as e:
@@ -456,7 +505,8 @@ class BudgetManager:
                         date=row[1],
                         category=row[2],
                         amount=row[3],
-                        description=row[4] or ""
+                        description=row[4] or "",
+                        alias=row[5] or None
                     )
                     expense_entries.append(expense)
         except sqlite3.Error as e:
@@ -485,7 +535,159 @@ class BudgetManager:
         
         expense_entries = self.get_expenses_by_date_range(start_date, end_date)
         return sum(expense.amount for expense in expense_entries if expense.category == category)
-    
+
+    # Alias operations
+    def add_alias(self, alias: AliasEntry) -> int:
+        """
+        Add an alias entry.
+
+        Args:
+            alias: Alias entry
+
+        Returns:
+            int: ID of the created alias
+
+        Raises:
+            ValueError: SQL database error
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO aliases (alias, full_name, type) 
+                    VALUES (?, ?, ?)
+                """, (alias.alias, alias.full_name, alias.type))
+                conn.commit()
+                return cursor.lastrowid
+
+        except sqlite3.IntegrityError:
+            # This happens if the alias is not unique
+            raise KeyError(f"Alias '{alias.alias}' already exists.")
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error: {e}")
+
+    def get_alias(self, alias: str, table: str) -> AliasEntry | None:
+        """
+        Resolve an alias entry.
+
+        Args:
+            alias: The alias to resolve
+            table: The table the alias is related to 'income' or 'expenses'
+
+        Returns:
+            AliasEntry | None: The resolved alias entry, or ``None`` if the alias does not exist
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT * FROM aliases WHERE alias = ? AND type = ?
+                """, (alias, table))
+                alias = cursor.fetchone()
+
+                if alias:
+                    return AliasEntry(
+                        id=alias[0],
+                        alias=alias[1],
+                        full_name=alias[2],
+                        type=alias[3]
+                    )
+                else: # No match found
+                    return None
+
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error: {e}")
+
+    def get_all_aliases(self, table: str) -> List[AliasEntry]:
+        """
+        Get all the aliases for a specific table.
+        Args:
+            table: The table the alias is related to 'income' or 'expenses'
+
+        Returns:
+            List[AliasEntry]: The list of aliases for the given table
+
+        """
+        aliases = []
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+
+                if table.lower() == "all":
+                    cursor.execute("""
+                        SELECT * FROM aliases
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT * FROM aliases WHERE type = ?
+                    """, (table, ))
+
+                rows = cursor.fetchall()
+
+                for row in rows:
+                    aliases.append(AliasEntry(
+                        id=row[0],
+                        alias=row[1],
+                        full_name=row[2],
+                        type=row[3]
+                    ))
+
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error: {e}")
+
+        return aliases
+
+    def delete_alias(self, alias: str, table: str) -> AliasEntry:
+        """
+        Delete an alias entry by its ID.
+
+        Args:
+            alias: ID of the alias entry to delete
+            table: The table the alias is related to 'income' or 'expenses'
+
+        Returns:
+            AliasEntry: The deleted alias entry
+
+        Raises:
+            KeyError: If the alias entry does not exist
+            AssertionError: If it deletes multiple entries
+            ValueError: If a database error occurs
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                # Get deleted contents
+                cursor.execute("""
+                    SELECT * FROM aliases WHERE alias = ? AND type = ?
+                """, (alias, table))
+
+                deleted_row = cursor.fetchone()
+
+                # Delete contents
+                cursor.execute("""
+                    DELETE FROM aliases WHERE alias = ? AND type = ?
+                """, (alias, table))
+                conn.commit()
+                n_deleted_rows = cursor.rowcount  # will be 1 if delete works
+
+                assert(n_deleted_rows <= 1), "Multiple rows deleted" # Should never have duplicates
+                if n_deleted_rows == 1:
+                    # return deleted entry
+                    return AliasEntry(
+                        id=deleted_row[0],
+                        alias=deleted_row[1],
+                        full_name=deleted_row[2],
+                        type=deleted_row[3]
+                    )
+                else:
+                    raise KeyError(f"Alias entry for the {table} table with alias {alias} was not found")
+
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error: {e}")
+
+
+
     # Budget limit operations
     def set_budget_limit(self, budget_limit: BudgetLimit) -> int:
         """
@@ -659,7 +861,8 @@ class BudgetManager:
                         date=row[1],
                         source=row[2],
                         amount=row[3],
-                        description=row[4] or ""
+                        description=row[4] or "",
+                        alias=row[5] or None
                     )
                     matching_income.append(income)
                 
@@ -677,7 +880,8 @@ class BudgetManager:
                         date=row[1],
                         category=row[2],
                         amount=row[3],
-                        description=row[4] or ""
+                        description=row[4] or "",
+                        alias=row[5] or None
                     )
                     matching_expenses.append(expense)
                     
