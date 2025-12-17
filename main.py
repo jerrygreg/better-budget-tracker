@@ -27,7 +27,7 @@ from utils import (
     parse_amount, parse_id,
     format_currency, format_date, format_percentage,
     get_common_expense_categories, get_common_income_sources, get_common_goal_categories,
-    get_current_date_string, get_month_start_date, get_month_end_date
+    get_current_date_string, get_month_start_date, get_month_end_date, parse_date
 )
 
 
@@ -164,9 +164,8 @@ class BudgetTrackerCLI:
             amount_input = self.get_parsed_input("Amount", parse=parse_amount)
 
             # Get date
-            date_input = self.get_validated_input("Date (YYYY-MM-DD)",
-                                                  "Invalid date format",
-                                                  validate=validate_date,
+            date_input = self.get_parsed_input("Date (YYYY-MM-DD)",
+                                                  parse=parse_date,
                                                   default=get_current_date_string())
 
             # Get description
@@ -294,10 +293,9 @@ class BudgetTrackerCLI:
             amount_input = self.get_parsed_input("Amount", parse=parse_amount)
 
             # Get date
-            date_input = self.get_validated_input("Date (YYYY-MM-DD)",
-                                                  "Invalid date format",
-                                                  validate=validate_date,
-                                                  default=get_current_date_string())
+            date_input = self.get_parsed_input("Date (YYYY-MM-DD)",
+                                               parse=parse_date,
+                                               default=get_current_date_string())
 
             # Get description
             description_input = self.get_validated_input(

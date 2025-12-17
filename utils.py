@@ -119,6 +119,41 @@ def validate_date(date_string: str) -> bool:
     except ValueError:
         return False
 
+def parse_date(date_string: str) -> str:
+    """
+        Parse a date string in the right format, or a section of this format (YYYY-MM-DD).
+
+        Args:
+            date_string: Date string to parse
+
+        Returns:
+            str: Parsed date string
+
+        Raises:
+            ValueError: If date string cannot be parsed
+        """
+    current_date = get_current_date_string()
+    if not date_string:
+        raise ValueError("Date cannot be empty")
+
+    # Fix format, check against abridged formats
+    month_pattern = r'^-\d{2}-\d{2}$'
+    day_pattern = r'^-\d{2}$'
+    if re.match(month_pattern, date_string):
+        date_string = current_date[:4] + date_string
+    elif re.match(day_pattern, date_string):
+        date_string = current_date[:7] + date_string
+    # Check against full format
+    # year_pattern = r'^\d{4}-\d{2}-\d{2}$'
+    # if not re.match(year_pattern, date_string):
+    #     raise ValueError("Invalid date format")
+
+    try:
+        # Try to parse the date
+        datetime.strptime(date_string, '%Y-%m-%d')
+        return date_string
+    except ValueError:
+        raise ValueError("Invalid date format")
 
 def format_date(date_string: str, input_format: str = '%Y-%m-%d', output_format: str = '%B %d, %Y') -> str:
     """
@@ -532,7 +567,6 @@ def parse_csv_line(line: str) -> List[str]:
     fields.append(current_field.strip())
     
     return fields
-
 
 def validate_csv_data(data: List[List[str]], expected_columns: int) -> Tuple[bool, str]:
     """
