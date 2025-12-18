@@ -137,12 +137,12 @@ def parse_date(date_string: str) -> str:
         raise ValueError("Date cannot be empty")
 
     # Fix format, check against abridged formats
-    month_pattern = r'^-\d{2}-\d{2}$'
-    day_pattern = r'^-\d{2}$'
+    month_pattern = r'^\d{2}-\d{2}$'
+    day_pattern = r'^\d{2}$'
     if re.match(month_pattern, date_string):
-        date_string = current_date[:4] + date_string
+        date_string = current_date[:5] + date_string
     elif re.match(day_pattern, date_string):
-        date_string = current_date[:7] + date_string
+        date_string = current_date[:8] + date_string
     # Check against full format
     # year_pattern = r'^\d{4}-\d{2}-\d{2}$'
     # if not re.match(year_pattern, date_string):
