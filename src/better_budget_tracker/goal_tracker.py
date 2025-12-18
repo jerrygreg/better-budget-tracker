@@ -9,7 +9,7 @@ import os
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
-from utils import validate_amount, validate_date, format_currency, get_current_date_string
+from better_budget_tracker.utils import validate_amount, validate_date, format_currency, get_current_date_string
 
 
 @dataclass

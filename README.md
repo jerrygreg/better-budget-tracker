@@ -134,7 +134,7 @@ budget_tracker/
 Manages income, expenses, and budget data.
 
 ```python
-from budget import BudgetManager, IncomeEntry, ExpenseEntry
+from src.better_budget_tracker.budget import BudgetManager, IncomeEntry, ExpenseEntry
 
 manager = BudgetManager()
 
@@ -161,7 +161,7 @@ expense_id = manager.add_expense(expense)
 Manages savings goals and progress tracking.
 
 ```python
-from goal_tracker import GoalTracker, SavingsGoal
+from src.better_budget_tracker.goal_tracker import GoalTracker, SavingsGoal
 
 tracker = GoalTracker()
 
@@ -180,7 +180,7 @@ goal_id = tracker.create_goal(goal)
 Generates reports and visualizations.
 
 ```python
-from reports import ReportGenerator
+from src.better_budget_tracker.reports import ReportGenerator
 
 generator = ReportGenerator(manager, tracker)
 generator.generate_monthly_summary(2024, 1)

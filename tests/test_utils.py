@@ -1,5 +1,5 @@
 import pytest
-from utils import (
+from src.better_budget_tracker.utils import (
     validate_amount,
     parse_amount,
     format_currency,

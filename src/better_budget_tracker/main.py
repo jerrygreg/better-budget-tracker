@@ -11,7 +11,6 @@ import os
 from typing import TypeVar, Callable
 from datetime import datetime, date
 
-from aem.mactypes import Alias
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -19,16 +18,17 @@ from rich.prompt import Prompt, Confirm
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import box
 
-from budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit, AliasEntry
-from goal_tracker import GoalTracker, SavingsGoal
-from reports import ReportGenerator
-from utils import (
+from better_budget_tracker.budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit, AliasEntry
+from better_budget_tracker.goal_tracker import GoalTracker, SavingsGoal
+from better_budget_tracker.reports import ReportGenerator
+from better_budget_tracker.utils import (
     validate_amount, validate_date, validate_category, validate_description, validate_alias,
     parse_amount, parse_id,
     format_currency, format_date, format_percentage,
     get_common_expense_categories, get_common_income_sources, get_common_goal_categories,
     get_current_date_string, get_month_start_date, get_month_end_date, parse_date
 )
+from better_budget_tracker.config_manager import (ConfigManager)
 
 
 class BudgetTrackerCLI:
@@ -37,22 +37,26 @@ class BudgetTrackerCLI:
     def __init__(self):
         """Initialize the CLI application."""
         self.console = Console()
-        self.budget_manager = BudgetManager()
-        self.goal_tracker = GoalTracker()
-        self.report_generator = ReportGenerator(self.budget_manager, self.goal_tracker)
+        self.config_manager = ConfigManager()
+        self.budget_manager = BudgetManager(db_path=self.config_manager.config.db_file) #Pass config manager's db filepath in
+        self.goal_tracker = GoalTracker(db_path=self.config_manager.config.db_file) #Pass config manager's db filepath in
+        self.report_generator = ReportGenerator(self.budget_manager,
+                                                self.goal_tracker,
+                                                self.config_manager.config.reports_dir)
         self.running = True
-    
-    def display_welcome(self) -> None:
+
+    def display_welcome(self, extra="") -> None:
         """Display welcome message and main menu."""
-        welcome_text = """
+        welcome_text = f"""
         💰 BUDGET PLANNER & FINANCIAL GOALS TRACKER 💰
         
-        Track your income, expenses, budgets, and savings goals
-        to achieve financial success!
+        Track your income, expenses, budgets, and savings goals        
+        to achieve financial success!\n[italic grey37]{extra}[/italic grey37]
         """
-        
-        self.console.print(Panel(welcome_text, title="Welcome", border_style="green"))
-    
+        #TODO: Change the welcome message to actually show location that data is coming from
+
+        self.console.print(Panel(welcome_text, title="Welcome", border_style="green", expand=False))
+
     def display_main_menu(self) -> None:
         """Display the main menu options."""
         menu_options = [
@@ -850,23 +854,27 @@ class BudgetTrackerCLI:
 
     def alias_menu(self) -> None:
         """A menu to handle alias options."""
-        while True:
-            self.console.print("\n[bold gold3]🏷️ Alias Management[/bold gold3]")
-            self.console.print("1. Create Alias")
-            self.console.print("2. View Aliases")
-            self.console.print("3. Delete Alias")
-            self.console.print("4. Back to Options Menu")
+        try:
+            while True:
+                self.console.print("\n[bold gold3]🏷️ Alias Management[/bold gold3]")
+                self.console.print("1. Create Alias")
+                self.console.print("2. View Aliases")
+                self.console.print("3. Delete Alias")
+                self.console.print("4. Back to Options Menu")
 
-            choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
+                choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
 
-            if choice == "1":
-                self.add_alias_entry()
-            elif choice == "2":
-                self.view_all_aliases()
-            elif choice == "3":
-                self.delete_alias_entry()
-            elif choice == "4":
-                break
+                if choice == "1":
+                    self.add_alias_entry()
+                elif choice == "2":
+                    self.view_all_aliases()
+                elif choice == "3":
+                    self.delete_alias_entry()
+                elif choice == "4":
+                    break
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
 
     def add_alias_entry(self) -> None:
         """Add an alias entry."""
@@ -1007,7 +1015,8 @@ class BudgetTrackerCLI:
 
     def run(self) -> None:
         """Run the main application loop."""
-        self.display_welcome()
+        welcome_debug = self.config_manager.config_log.strip()
+        self.display_welcome(welcome_debug)
         
         while self.running:
             try:

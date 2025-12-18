@@ -6,11 +6,10 @@ This script demonstrates the functionality of the budget tracker
 by adding some sample data and generating reports.
 """
 
-from budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit
-from goal_tracker import GoalTracker, SavingsGoal
+from src.better_budget_tracker.budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit
+from src.better_budget_tracker.goal_tracker import GoalTracker, SavingsGoal
 from reports import ReportGenerator
-from utils import get_current_date_string
-from datetime import date, timedelta
+from datetime import date
 
 
 def create_sample_data():

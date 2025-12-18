@@ -12,15 +12,15 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
 
-from budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit
-from goal_tracker import GoalTracker, SavingsGoal
-from utils import format_currency, format_date, format_percentage, get_month_start_date, get_month_end_date
+from better_budget_tracker.budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit
+from better_budget_tracker.goal_tracker import GoalTracker, SavingsGoal
+from better_budget_tracker.utils import format_currency, format_date, format_percentage, get_month_start_date, get_month_end_date
 
 
 class ReportGenerator:
     """Generates various reports and visualizations for budget tracking."""
     
-    def __init__(self, budget_manager: BudgetManager, goal_tracker: GoalTracker):
+    def __init__(self, budget_manager: BudgetManager, goal_tracker: GoalTracker, reports_dir):
         """
         Initialize the report generator.
         
@@ -30,11 +30,11 @@ class ReportGenerator:
         """
         self.budget_manager = budget_manager
         self.goal_tracker = goal_tracker
-        self._ensure_reports_directory()
+        self._ensure_reports_directory(reports_dir)
     
-    def _ensure_reports_directory(self) -> None:
+    def _ensure_reports_directory(self,reports_dir) -> None:
         """Ensure the reports directory exists."""
-        os.makedirs("reports", exist_ok=True)
+        os.makedirs(reports_dir, exist_ok=True)
     
     def generate_monthly_summary(self, year: int, month: int, save_to_file: bool = True) -> str:
         """
