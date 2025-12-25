@@ -17,6 +17,8 @@ from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import box
+from sympy.strategies.core import switch
+from urllib3.filepost import choose_boundary
 
 from better_budget_tracker.budget import BudgetManager, IncomeEntry, ExpenseEntry, BudgetLimit, AliasEntry
 from better_budget_tracker.goal_tracker import GoalTracker, SavingsGoal
@@ -841,17 +843,25 @@ class BudgetTrackerCLI:
             self.console.print("\n[bold dark_orange]⚙️ Advanced Options[/bold dark_orange]")
             self.console.print("1. Create and Manage Aliases")
             self.console.print("2. Reindex Tables")
-            self.console.print("3. Back to Main Menu")
+            self.console.print("3. Create Backup")
+            self.console.print("4. Back to Main Menu")
 #TODO: ADD A "CREATE BACKUP" OPTION (Ik its easy to do by just duping the file, but still)
 
-            choice = Prompt.ask("Choose an option", choices=["1", "2", "3"])
+            choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
 
             if choice == "1":
                 self.alias_menu()
             elif choice == "2":
                 self.reindex_tables()
             elif choice == "3":
+                self.create_backup()
+            elif choice == "4":
                 break
+
+    def create_backup(self) -> None:
+        """Create backup of the db files"""
+        #TODO: FINISH THIS
+        self.console.print("[bold red]THIS DOESNT WORK RIGHT NOW[/bold red]")
 
     def alias_menu(self) -> None:
         """A menu to handle alias options."""
@@ -861,12 +871,13 @@ class BudgetTrackerCLI:
                 self.console.print("1. Create Alias")
                 self.console.print("2. View Aliases")
                 self.console.print("3. Delete Alias")
-                self.console.print("4. Back to Options Menu")
+                self.console.print("4. Rename Alias")
+                self.console.print("5. Back to Options Menu")
 #TODO: CREATE RENAMING ALIASES
 #TODO: EDIT DELETE ALIAS TO GIVE OPTIONS TO CHANGE THE NAMES OF THINGS THAT HAVE THAT ALIAS
 #TODO: CREATE OTHER THINGS TO MANAGE ALIASES
 
-                choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
+                choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4", "5"])
 
                 if choice == "1":
                     self.add_alias_entry()
@@ -875,6 +886,8 @@ class BudgetTrackerCLI:
                 elif choice == "3":
                     self.delete_alias_entry()
                 elif choice == "4":
+                    self.rename_alias_entry()
+                elif choice == "5":
                     break
 
         except KeyboardInterrupt:
@@ -966,6 +979,61 @@ class BudgetTrackerCLI:
             self.console.print("\n[yellow]Operation cancelled.[/yellow]")
         except Exception as e:
             self.console.print(f"[red]❌ Error deleting alias: {e}[/red]")
+
+    def rename_alias_entry(self) -> None:
+        """Rename an alias entry."""
+        self.console.print("\n[gold3]Rename Alias Entry[/gold3]")
+        try:
+            # Get old info
+            old_alias_name = self.get_validated_input("Name of alias to rename",
+                                                  "Invalid name.",
+                                                  validate=validate_alias)
+            table = Prompt.ask("Associated table", choices=["income", "expenses", "all"])
+
+            # Get new info
+            new_alias_name = self.get_validated_input("New name of alias",
+                                                  "Invalid name.",
+                                                  validate=validate_alias)
+            new_full_name = self.get_validated_input("New full expanded name of alias",
+                                                 "Invalid name.",
+                                                 validate=validate_alias)
+            replaced_alias_table = Table(title="[bold green]Replaced Alias Entry[/bold green]", show_header=True, box=box.HORIZONTALS)
+            replaced_alias_table.add_column("ID", style="cyan", no_wrap=True)
+            replaced_alias_table.add_column("Old Alias", style="red")
+            replaced_alias_table.add_column("Old Full Name", style="red")
+            replaced_alias_table.add_column("New Alias", style="green")
+            replaced_alias_table.add_column("New Full Name", style="green")
+            replaced_alias_table.add_column("Type")
+
+            replaced_aliases: list[tuple[AliasEntry, AliasEntry]] = []
+
+            if table == "all":
+                #rename both
+                old_alias_i, new_alias_i = self.budget_manager.replace_alias(old_alias_name, "income", new_alias_name, new_full_name)
+                old_alias_e, new_alias_e = self.budget_manager.replace_alias(old_alias_name, "expenses", new_alias_name, new_full_name)
+                replaced_aliases.append((old_alias_i,new_alias_i))
+                replaced_aliases.append((old_alias_e, new_alias_e))
+            else:
+                #rename one
+                old_alias, new_alias = self.budget_manager.replace_alias(old_alias_name, table, new_alias_name, new_full_name)
+                replaced_aliases.append((old_alias, new_alias))
+
+            for old_alias_entry, new_alias_entry in replaced_aliases:
+                assert(new_alias_entry.id == old_alias_entry.id)
+                assert (new_alias_entry.type == old_alias_entry.type)
+                replaced_alias_table.add_row(
+                    str(new_alias_entry.id),
+                    old_alias_entry.alias,
+                    old_alias_entry.full_name,
+                    new_alias_entry.alias,
+                    new_alias_entry.full_name,
+                    new_alias_entry.type,
+                )
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
+        except Exception as e:
+            self.console.print(f"[red]❌ Error renaming alias: {e}[/red]")
 
     def reindex_tables(self) -> None:
         """Menu to select which table to reindex."""

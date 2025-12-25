@@ -8,6 +8,7 @@ income/expense tracking, budget limits, and financial calculations.
 import sqlite3
 import os
 from datetime import datetime, date
+from html.parser import incomplete
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 
@@ -684,7 +685,65 @@ class BudgetManager:
         except sqlite3.Error as e:
             raise ValueError(f"Database error: {e}")
 
+    def replace_alias(self, old_alias: str, table: str, new_alias: str, new_full_name: str) -> tuple[AliasEntry, AliasEntry]:
+        """
+        Replace an alias entry with a new one. Updates the income and expenses tables accordingly.
 
+        Args:
+            old_alias: The old alias to replace
+            table: The table the alias is related to 'income' or 'expenses'
+            new_alias: The new alias
+            new_full_name: The new full name
+
+        Returns:
+            tuple[AliasEntry, AliasEntry]: A tuple (old_alias_entry, new_alias_entry)
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                # Update alias table
+                cursor.execute("""
+                    SELECT * FROM aliases WHERE alias = ? AND type = ?
+                """, (old_alias, table))
+                replaced_row = cursor.fetchone()
+
+                cursor.execute("""
+                    UPDATE aliases SET alias = ?, full_name = ? WHERE alias = ? AND type = ?
+                    SELECT * FROM aliases WHERE alias = ? AND type = ?
+                """, (new_alias, new_full_name, old_alias, table, new_alias, table))
+                new_row = cursor.fetchone()
+
+                # Update other table
+                match table:
+                    case "income":
+                        cursor.execute("""
+                            UPDATE income SET alias = ?, source = ? WHERE alias = ?
+                        """, (new_alias, new_full_name, old_alias))
+                    case "expenses":
+                        cursor.execute("""
+                            UPDATE expenses SET alias = ?, category = ? WHERE alias = ?
+                        """, (new_alias, new_full_name, old_alias))
+                    case _:
+                        raise ValueError(f"Unknown table {type}")
+                conn.commit()
+
+                # Return both aliases
+                old_alias = AliasEntry(
+                    id=replaced_row[0],
+                    alias=replaced_row[1],
+                    full_name=replaced_row[2],
+                    type=replaced_row[3]
+                )
+                new_alias = AliasEntry(
+                    id=new_row[0],
+                    alias=new_row[1],
+                    full_name=new_row[2],
+                    type=new_row[3]
+                )
+                return old_alias, new_alias
+
+        except sqlite3.Error as e:
+            raise ValueError(f"Database error: {e}")
 
     # Budget limit operations
     def set_budget_limit(self, budget_limit: BudgetLimit) -> int:
