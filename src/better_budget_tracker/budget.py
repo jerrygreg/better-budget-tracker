@@ -308,7 +308,7 @@ class BudgetManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM income ORDER BY date DESC, created_at DESC")
+                cursor.execute("SELECT * FROM income ORDER BY date ASC, created_at ASC")
                 rows = cursor.fetchall()
                 
                 for row in rows:
@@ -442,7 +442,7 @@ class BudgetManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM expenses ORDER BY date DESC, created_at DESC")
+                cursor.execute("SELECT * FROM expenses ORDER BY date ASC, created_at ASC")
                 rows = cursor.fetchall()
                 
                 for row in rows:

@@ -842,6 +842,7 @@ class BudgetTrackerCLI:
             self.console.print("1. Create and Manage Aliases")
             self.console.print("2. Reindex Tables")
             self.console.print("3. Back to Main Menu")
+#TODO: ADD A "CREATE BACKUP" OPTION (Ik its easy to do by just duping the file, but still)
 
             choice = Prompt.ask("Choose an option", choices=["1", "2", "3"])
 
@@ -861,6 +862,9 @@ class BudgetTrackerCLI:
                 self.console.print("2. View Aliases")
                 self.console.print("3. Delete Alias")
                 self.console.print("4. Back to Options Menu")
+#TODO: CREATE RENAMING ALIASES
+#TODO: EDIT DELETE ALIAS TO GIVE OPTIONS TO CHANGE THE NAMES OF THINGS THAT HAVE THAT ALIAS
+#TODO: CREATE OTHER THINGS TO MANAGE ALIASES
 
                 choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
 
