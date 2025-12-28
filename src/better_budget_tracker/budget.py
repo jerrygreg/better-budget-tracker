@@ -336,7 +336,7 @@ class BudgetManager:
                 cursor.execute("""
                     SELECT * FROM income 
                     WHERE date >= ? AND date <= ? 
-                    ORDER BY date DESC, created_at DESC
+                    ORDER BY date ASC, created_at ASC
                 """, (start_date, end_date))
                 rows = cursor.fetchall()
                 
@@ -467,7 +467,7 @@ class BudgetManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM expenses WHERE category = ? ORDER BY date DESC", (category,))
+                cursor.execute("SELECT * FROM expenses WHERE category = ? ORDER BY date ASC", (category,))
                 rows = cursor.fetchall()
                 
                 for row in rows:
@@ -494,7 +494,7 @@ class BudgetManager:
                 cursor.execute("""
                     SELECT * FROM expenses 
                     WHERE date >= ? AND date <= ? 
-                    ORDER BY date DESC, created_at DESC
+                    ORDER BY date ASC, created_at ASC
                 """, (start_date, end_date))
                 rows = cursor.fetchall()
                 
@@ -701,27 +701,27 @@ class BudgetManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+
+                # Start a transaction
+                cursor.execute("BEGIN TRANSACTION;")
                 # Update alias table
-                cursor.execute("""
-                    SELECT * FROM aliases WHERE alias = ? AND type = ?
-                """, (old_alias, table))
+                cursor.execute("""SELECT * FROM aliases WHERE alias = ? AND type = ?""",
+                               (old_alias, table))
                 replaced_row = cursor.fetchone()
 
-                cursor.execute("""
-                    UPDATE aliases SET alias = ?, full_name = ? WHERE alias = ? AND type = ?
-                    SELECT * FROM aliases WHERE alias = ? AND type = ?
-                """, (new_alias, new_full_name, old_alias, table, new_alias, table))
+                cursor.execute("""UPDATE aliases SET alias = ?, full_name = ? WHERE alias = ? AND type = ?""",
+                               (new_alias, new_full_name, old_alias, table))
+                cursor.execute("""SELECT * FROM aliases WHERE alias = ? AND type = ?""",
+                               (new_alias, table))
                 new_row = cursor.fetchone()
 
                 # Update other table
                 match table:
                     case "income":
-                        cursor.execute("""
-                            UPDATE income SET alias = ?, source = ? WHERE alias = ?
+                        cursor.execute("""UPDATE income SET alias = ?, source = ? WHERE alias = ?
                         """, (new_alias, new_full_name, old_alias))
                     case "expenses":
-                        cursor.execute("""
-                            UPDATE expenses SET alias = ?, category = ? WHERE alias = ?
+                        cursor.execute("""UPDATE expenses SET alias = ?, category = ? WHERE alias = ?
                         """, (new_alias, new_full_name, old_alias))
                     case _:
                         raise ValueError(f"Unknown table {type}")
@@ -908,7 +908,7 @@ class BudgetManager:
                 cursor.execute("""
                     SELECT * FROM income 
                     WHERE LOWER(source) LIKE ? OR LOWER(description) LIKE ?
-                    ORDER BY date DESC
+                    ORDER BY date ASC
                 """, (f"%{query_lower}%", f"%{query_lower}%"))
                 income_rows = cursor.fetchall()
                 
@@ -927,7 +927,7 @@ class BudgetManager:
                 cursor.execute("""
                     SELECT * FROM expenses 
                     WHERE LOWER(category) LIKE ? OR LOWER(description) LIKE ?
-                    ORDER BY date DESC
+                    ORDER BY date ASC
                 """, (f"%{query_lower}%", f"%{query_lower}%"))
                 expense_rows = cursor.fetchall()
                 

@@ -8,6 +8,7 @@ It provides a command-line interface for managing budgets, expenses, income, and
 
 import sys
 import os
+import shutil
 from typing import TypeVar, Callable
 from datetime import datetime, date
 
@@ -55,7 +56,6 @@ class BudgetTrackerCLI:
         Track your income, expenses, budgets, and savings goals        
         to achieve financial success!\n[italic grey37]{extra}[/italic grey37]
         """
-        #TODO: Change the welcome message to actually show location that data is coming from
 
         self.console.print(Panel(welcome_text, title="Welcome", border_style="green", expand=False))
 
@@ -63,11 +63,11 @@ class BudgetTrackerCLI:
         """Display the main menu options."""
         menu_options = [
             "💰 Income Management",
-            "💸 Expense Management", 
+            "💸 Expense Management",
+            "🔍 Search & View Data",
             "📊 Budget Management",
             "🎯 Savings Goals",
             "📈 Reports & Analytics",
-            "🔍 Search & View Data",
             "⚙️ Advanced Options",
             "❌ Exit"
         ]
@@ -79,10 +79,10 @@ class BudgetTrackerCLI:
         descriptions = [
             "Add and manage income entries",
             "Add and manage expense entries",
+            "Search and view all data",
             "Set and view budget limits",
             "Create and track savings goals",
             "Generate reports and charts",
-            "Search and view all data",
             "Creating aliases, reindexing tables, ect.",
             "Exit the application"
         ]
@@ -155,8 +155,9 @@ class BudgetTrackerCLI:
         
         try:
             # Get income source
-            common_sources = get_common_income_sources()
-            self.console.print(f"Common sources: {', '.join(common_sources)}")
+            aliases = self.view_aliases_small("income")
+            self.console.print(f"Common sources: {', '.join(aliases)}")
+
             source_input = self.get_validated_input("Income source",
                                                     "Invalid source name.",
                                                     validate=validate_category)
@@ -282,10 +283,11 @@ class BudgetTrackerCLI:
         self.console.print("\n[bold red]Add Expense Entry[/bold red]")
         
         try:
-            # Get category
-            common_categories = get_common_expense_categories()
+            aliases_small = self.view_aliases_small("expenses")
             self.console.print(
-                f"Common categories: {', '.join(common_categories)}")
+                f"Common categories: {', '.join(aliases_small)}")
+
+            # Get category
             category_input = self.get_validated_input("Expense category",
                                                       "Invalid category name.",
                                                       validate=validate_category)
@@ -316,7 +318,7 @@ class BudgetTrackerCLI:
                 category=category_input,
                 amount=amount_input,
                 description=description_input,
-                alias=alias.full_name if alias else None
+                alias=alias.alias if alias else None
             )
 
             expense_id = self.budget_manager.add_expense(expense)
@@ -768,58 +770,78 @@ class BudgetTrackerCLI:
                 self.search_entries()
             elif choice == "2":
                 self.view_monthly_summary()
+# TODO: CREATE AN OPTION TO SEE "VIEWS" where certain things are included and summed
             elif choice == "3":
                 break
     
     def search_entries(self) -> None:
         """Search income and expense entries."""
-        query = Prompt.ask("Enter search term")
-        
-        if not query.strip():
-            self.console.print("[yellow]Search term cannot be empty.[/yellow]")
-            return
-        
-        matching_income, matching_expenses = self.budget_manager.search_entries(query)
-        
-        if not matching_income and not matching_expenses:
-            self.console.print(f"[yellow]No entries found matching '{query}'.[/yellow]")
-            return
-        
-        if matching_income:
-            self.console.print(f"\n[bold green]Income Entries ({len(matching_income)})[/bold green]")
-            table = Table(show_header=True, header_style="bold green")
-            table.add_column("Date", style="white")
-            table.add_column("Source", style="green")
-            table.add_column("Amount", style="green", justify="right")
-            table.add_column("Description", style="white")
-            
-            for income in matching_income:
-                table.add_row(
-                    format_date(income.date, output_format='%Y-%m-%d'),
-                    income.source,
-                    format_currency(income.amount),
-                    income.description
-                )
-            
-            self.console.print(table)
-        
-        if matching_expenses:
-            self.console.print(f"\n[bold red]Expense Entries ({len(matching_expenses)})[/bold red]")
-            table = Table(show_header=True, header_style="bold red")
-            table.add_column("Date", style="white")
-            table.add_column("Category", style="red")
-            table.add_column("Amount", style="red", justify="right")
-            table.add_column("Description", style="white")
-            
-            for expense in matching_expenses:
-                table.add_row(
-                    format_date(expense.date, output_format='%Y-%m-%d'),
-                    expense.category,
-                    format_currency(expense.amount),
-                    expense.description
-                )
-            
-            self.console.print(table)
+        try:
+            query = Prompt.ask("Enter search term")
+
+            if not query.strip():
+                self.console.print("[yellow]Search term cannot be empty.[/yellow]")
+                return
+
+            matching_income, matching_expenses = self.budget_manager.search_entries(query)
+
+            if not matching_income and not matching_expenses:
+                self.console.print(f"[yellow]No entries found matching '{query}'.[/yellow]")
+                return
+
+            net_income = 0
+            if matching_income:
+                self.console.print(f"\n[bold green]Income Entries ({len(matching_income)})[/bold green]")
+                table = Table(show_header=True, header_style="bold green")
+                table.add_column("Date", style="white")
+                table.add_column("Source", style="green")
+                table.add_column("Amount", style="green", justify="right")
+                table.add_column("Description", style="white")
+
+                for income in matching_income:
+                    net_income += income.amount
+                    table.add_row(
+                        format_date(income.date, output_format='%Y-%m-%d'),
+                        income.source,
+                        format_currency(income.amount),
+                        income.description
+                    )
+
+                self.console.print(table)
+
+            net_expenses = 0
+            if matching_expenses:
+                self.console.print(f"\n[bold red]Expense Entries ({len(matching_expenses)})[/bold red]")
+                table = Table(show_header=True, header_style="bold red")
+                table.add_column("Date", style="white")
+                table.add_column("Category", style="red")
+                table.add_column("Amount", style="red", justify="right")
+                table.add_column("Description", style="white")
+
+                for expense in matching_expenses:
+                    net_expenses -= expense.amount
+                    table.add_row(
+                        format_date(expense.date, output_format='%Y-%m-%d'),
+                        expense.category,
+                        format_currency(expense.amount),
+                        expense.description
+                    )
+
+                self.console.print(table)
+
+            matching_sum = net_expenses + net_income
+            self.console.print(f"\nNet income: [bold green]{format_currency(net_income)}[/bold green]")
+            self.console.print(f"Net expenses: [bold red]{format_currency(net_expenses)}[/bold red]")
+            if matching_sum >= 0:
+                self.console.print(f"[green]Total: {format_currency(matching_sum)}[/green]")
+            else:
+                self.console.print(f"[red]Total: {format_currency(matching_sum)}[/red]")
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Operation cancelled.[/yellow]")
+        except Exception as e:
+            self.console.print(f"[red]❌ Error adding alias: {e}[/red]")
+
     
     def view_monthly_summary(self) -> None:
         """View monthly financial summary."""
@@ -845,7 +867,6 @@ class BudgetTrackerCLI:
             self.console.print("2. Reindex Tables")
             self.console.print("3. Create Backup")
             self.console.print("4. Back to Main Menu")
-#TODO: ADD A "CREATE BACKUP" OPTION (Ik its easy to do by just duping the file, but still)
 
             choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"])
 
@@ -859,9 +880,12 @@ class BudgetTrackerCLI:
                 break
 
     def create_backup(self) -> None:
-        """Create backup of the db files"""
-        #TODO: FINISH THIS
-        self.console.print("[bold red]THIS DOESNT WORK RIGHT NOW[/bold red]")
+        """Create backup of the db file"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        src_path = self.config_manager.config.db_file
+        dst_path = self.config_manager.config.data_dir + f"/database_backup_{timestamp}.db"
+        shutil.copy2(src_path, dst_path)
+        self.console.print(f"[bold green]Backup created at:[/bold green] {dst_path}")
 
     def alias_menu(self) -> None:
         """A menu to handle alias options."""
@@ -874,8 +898,8 @@ class BudgetTrackerCLI:
                 self.console.print("4. Rename Alias")
                 self.console.print("5. Back to Options Menu")
 #TODO: CREATE RENAMING ALIASES
+    #TODO: TEST RENAMING ALIASES
 #TODO: EDIT DELETE ALIAS TO GIVE OPTIONS TO CHANGE THE NAMES OF THINGS THAT HAVE THAT ALIAS
-#TODO: CREATE OTHER THINGS TO MANAGE ALIASES
 
                 choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4", "5"])
 
@@ -921,10 +945,13 @@ class BudgetTrackerCLI:
         except Exception as e:
             self.console.print(f"[red]❌ Error adding alias: {e}[/red]")
 
-    def view_all_aliases(self) -> None:
+    def view_all_aliases(self, table = None) -> None:
         """View all aliases."""
 
-        alias_table = Prompt.ask("Which aliases do you want to see?", choices=["income", "expenses", "all"])
+        if not table:
+            alias_table = Prompt.ask("Which aliases do you want to see?", choices=["income", "expenses", "all"])
+        else:
+            alias_table = table
 
         aliases = self.budget_manager.get_all_aliases(alias_table)
 
@@ -950,6 +977,16 @@ class BudgetTrackerCLI:
             )
 
         self.console.print(table)
+
+    def view_aliases_small(self, table) -> list[str]:
+        """View all aliases in a smaller table. Returned as a list of alias strings."""
+        aliases = self.budget_manager.get_all_aliases(table)
+        result: list[str] = []
+        for alias in aliases:
+            result.append(f"({alias.alias}): {alias.full_name}")
+
+        return result
+
 
     def delete_alias_entry(self) -> None:
         """Delete an alias entry."""
@@ -983,6 +1020,7 @@ class BudgetTrackerCLI:
     def rename_alias_entry(self) -> None:
         """Rename an alias entry."""
         self.console.print("\n[gold3]Rename Alias Entry[/gold3]")
+        self.console.print("[bold red]⚠️ WARNING: This is a destructive operation. It will ruin any connections between tables[/bold red]")
         try:
             # Get old info
             old_alias_name = self.get_validated_input("Name of alias to rename",
@@ -1029,6 +1067,8 @@ class BudgetTrackerCLI:
                     new_alias_entry.full_name,
                     new_alias_entry.type,
                 )
+
+            self.console.print(replaced_alias_table)
 
         except KeyboardInterrupt:
             self.console.print("\n[yellow]Operation cancelled.[/yellow]")
@@ -1100,13 +1140,13 @@ class BudgetTrackerCLI:
                 elif choice == "2":
                     self.expense_management_menu()
                 elif choice == "3":
-                    self.budget_management_menu()
-                elif choice == "4":
-                    self.savings_goals_menu()
-                elif choice == "5":
-                    self.reports_menu()
-                elif choice == "6":
                     self.search_menu()
+                elif choice == "4":
+                    self.budget_management_menu()
+                elif choice == "5":
+                    self.savings_goals_menu()
+                elif choice == "6":
+                    self.reports_menu()
                 elif choice == "7":
                     self.advanced_options_menu()
                 elif choice == "8":
@@ -1134,7 +1174,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-
+# TODO: allow esc as an input to go back instead of just ^C
 # TODO: Add multi-month comparison charts for spending trends
 # TODO: Add category heatmaps in reports
 # TODO: Add goal completion notifications (console or email)

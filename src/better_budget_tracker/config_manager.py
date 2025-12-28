@@ -11,6 +11,14 @@ class MissingFile(Enum):
 
 @dataclass
 class Config:
+    """
+    Dataclass for the config
+
+    Attributes:
+        data_dir: The absolute path to the data directory.
+        data_dir: The absolute path to the database file.
+        data_dir: The absolute path to the reports directory.
+    """
     data_dir: str
     db_file: str
     reports_dir: str

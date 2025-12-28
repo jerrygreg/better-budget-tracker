@@ -30,6 +30,7 @@ class ReportGenerator:
         """
         self.budget_manager = budget_manager
         self.goal_tracker = goal_tracker
+        self.reports_dir = reports_dir
         self._ensure_reports_directory(reports_dir)
     
     def _ensure_reports_directory(self,reports_dir) -> None:
@@ -103,7 +104,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/monthly_summary_{year}_{month:02d}_{timestamp}.txt"
+            filename = f"{self.reports_dir}/monthly_summary_{year}_{month:02d}_{timestamp}.txt"
             with open(filename, 'w') as f:
                 f.write(report_content)
             print(f"Monthly summary saved to: {filename}")
@@ -186,7 +187,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/goals_summary_{timestamp}.txt"
+            filename = f"{self.reports_dir}/goals_summary_{timestamp}.txt"
             with open(filename, 'w') as f:
                 f.write(report_content)
             print(f"Goals summary saved to: {filename}")
@@ -241,7 +242,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/spending_chart_{year}_{month:02d}_{timestamp}.png"
+            filename = f"{self.reports_dir}/spending_chart_{year}_{month:02d}_{timestamp}.png"
             plt.savefig(filename, dpi=300, bbox_inches='tight')
             print(f"Spending chart saved to: {filename}")
             plt.close()
@@ -305,7 +306,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/budget_status_{year}_{month:02d}_{timestamp}.png"
+            filename = f"{self.reports_dir}/budget_status_{year}_{month:02d}_{timestamp}.png"
             plt.savefig(filename, dpi=300, bbox_inches='tight')
             print(f"Budget status chart saved to: {filename}")
             plt.close()
@@ -357,7 +358,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/goals_progress_{timestamp}.png"
+            filename = f"{self.reports_dir}/goals_progress_{timestamp}.png"
             plt.savefig(filename, dpi=300, bbox_inches='tight')
             print(f"Goals progress chart saved to: {filename}")
             plt.close()
@@ -415,7 +416,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/income_vs_expenses_{year}_{month:02d}_{timestamp}.png"
+            filename = f"{self.reports_dir}/income_vs_expenses_{year}_{month:02d}_{timestamp}.png"
             plt.savefig(filename, dpi=300, bbox_inches='tight')
             print(f"Income vs expenses chart saved to: {filename}")
             plt.close()
@@ -486,7 +487,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/monthly_trend_{months}months_{timestamp}.png"
+            filename = f"{self.reports_dir}/monthly_trend_{months}months_{timestamp}.png"
             plt.savefig(filename, dpi=300, bbox_inches='tight')
             print(f"Monthly trend chart saved to: {filename}")
             plt.close()
@@ -535,7 +536,7 @@ class ReportGenerator:
         
         if save_to_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"reports/comprehensive_report_{year}_{month:02d}_{timestamp}.txt"
+            filename = f"{self.reports_dir}/comprehensive_report_{year}_{month:02d}_{timestamp}.txt"
             with open(filename, 'w') as f:
                 f.write("\n".join(comprehensive_content))
             print(f"Comprehensive report saved to: {filename}")
