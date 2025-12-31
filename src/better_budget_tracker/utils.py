@@ -337,7 +337,7 @@ def get_common_goal_categories() -> List[str]:
         "Other"
     ]
 
-
+Category_invalid_characters = "!,"
 def validate_category(category: str) -> bool:
     """
     Validate category name.
@@ -350,14 +350,18 @@ def validate_category(category: str) -> bool:
     """
     if not category or not category.strip():
         return False
-    
+
+    for char in Category_invalid_characters:
+        if char in category:
+            return False
+
     # Check for reasonable length
     if len(category.strip()) < 1 or len(category.strip()) > 50:
         return False
     
     return True
 
-
+Alias_invalid_characters = Category_invalid_characters
 def validate_alias(alias: str) -> bool:
     """
     Validate alias name.
@@ -370,6 +374,11 @@ def validate_alias(alias: str) -> bool:
     """
     if not alias or not alias.strip():
         return False
+
+    for char in Alias_invalid_characters:
+        if char in alias:
+            return False
+
 
     # Check for reasonable length
     if len(alias.strip()) < 1 or len(alias.strip()) > 50:

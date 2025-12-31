@@ -29,7 +29,8 @@ from better_budget_tracker.utils import (
     parse_amount, parse_id,
     format_currency, format_date, format_percentage,
     get_common_expense_categories, get_common_income_sources, get_common_goal_categories,
-    get_current_date_string, get_month_start_date, get_month_end_date, parse_date
+    get_current_date_string, get_month_start_date, get_month_end_date, parse_date,
+    Category_invalid_characters, Source_invalid_characters, Alias_invalid_characters
 )
 from better_budget_tracker.config_manager import (ConfigManager)
 
@@ -159,7 +160,7 @@ class BudgetTrackerCLI:
             self.console.print(f"Common sources: {', '.join(aliases)}")
 
             source_input = self.get_validated_input("Income source",
-                                                    "Invalid source name.",
+                                                    f"Invalid source name. [grey37](Cannot have characters: {Category_invalid_characters})[/grey37]",
                                                     validate=validate_category)
 
             alias = self.budget_manager.get_alias(alias=source_input,table="income")
@@ -289,7 +290,7 @@ class BudgetTrackerCLI:
 
             # Get category
             category_input = self.get_validated_input("Expense category",
-                                                      "Invalid category name.",
+                                                      f"Invalid category name.[grey37](Cannot have characters: {Category_invalid_characters})[/grey37]",
                                                       validate=validate_category)
 
             alias = self.budget_manager.get_alias(alias=category_input,table="expenses")
@@ -777,13 +778,18 @@ class BudgetTrackerCLI:
     def search_entries(self) -> None:
         """Search income and expense entries."""
         try:
-            query = Prompt.ask("Enter search term")
+            query = Prompt.ask("[grey37](Add an '!' at the start of your search term to search for everything without that term)[/grey37]\nEnter search term")
 
             if not query.strip():
                 self.console.print("[yellow]Search term cannot be empty.[/yellow]")
                 return
 
-            matching_income, matching_expenses = self.budget_manager.search_entries(query)
+            exclude = False
+            if query[0] == "!":
+                query = query[1:]
+                exclude = True
+
+            matching_income, matching_expenses = self.budget_manager.search_entries(query, exclude=exclude)
 
             if not matching_income and not matching_expenses:
                 self.console.print(f"[yellow]No entries found matching '{query}'.[/yellow]")
@@ -921,10 +927,10 @@ class BudgetTrackerCLI:
         """Add an alias entry."""
         try:
             alias_name = self.get_validated_input("Name of alias",
-                                                    "Invalid name.",
+                                                    f"Invalid alias. [grey37](Cannot have characters: {Alias_invalid_characters})[/grey37]",
                                                     validate=validate_alias)
             full_name = self.get_validated_input("Full expanded name of alias",
-                                                    "Invalid name.",
+                                                    f"Invalid name. [grey37](Cannot have characters: {Alias_invalid_characters})[/grey37]",
                                                     validate=validate_alias)
             table = Prompt.ask("What table is this for?", choices=["income", "expenses", "all"])
 

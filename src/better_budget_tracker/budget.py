@@ -12,6 +12,8 @@ from html.parser import incomplete
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 
+from tldextract.suffix_list import extract_tlds_from_suffix_list
+
 from better_budget_tracker.utils import validate_amount, validate_date, format_currency, get_current_date_string
 
 
@@ -894,20 +896,20 @@ class BudgetManager:
         
         return alerts
     
-    def search_entries(self, query: str) -> Tuple[List[IncomeEntry], List[ExpenseEntry]]:
+    def search_entries(self, query: str, exclude: bool = False) -> Tuple[List[IncomeEntry], List[ExpenseEntry]]:
         """Search income and expense entries by description or source/category."""
         query_lower = query.lower()
         matching_income = []
         matching_expenses = []
+        NOT = "NOT" if exclude else ""
         
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                
                 # Search income
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT * FROM income 
-                    WHERE LOWER(source) LIKE ? OR LOWER(description) LIKE ?
+                    WHERE {NOT} (LOWER(source) LIKE ? OR LOWER(description) LIKE ?)
                     ORDER BY date ASC
                 """, (f"%{query_lower}%", f"%{query_lower}%"))
                 income_rows = cursor.fetchall()
@@ -924,9 +926,9 @@ class BudgetManager:
                     matching_income.append(income)
                 
                 # Search expenses
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT * FROM expenses 
-                    WHERE LOWER(category) LIKE ? OR LOWER(description) LIKE ?
+                    WHERE {NOT} (LOWER(category) LIKE ? OR LOWER(description) LIKE ?)
                     ORDER BY date ASC
                 """, (f"%{query_lower}%", f"%{query_lower}%"))
                 expense_rows = cursor.fetchall()
