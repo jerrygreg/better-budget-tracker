@@ -30,7 +30,7 @@ from better_budget_tracker.utils import (
     format_currency, format_date, format_percentage,
     get_common_expense_categories, get_common_income_sources, get_common_goal_categories,
     get_current_date_string, get_month_start_date, get_month_end_date, parse_date,
-    Category_invalid_characters, Source_invalid_characters, Alias_invalid_characters
+    Category_invalid_characters, Alias_invalid_characters
 )
 from better_budget_tracker.config_manager import (ConfigManager)
 
@@ -984,7 +984,7 @@ class BudgetTrackerCLI:
 
         self.console.print(table)
 
-    def view_aliases_small(self, table) -> list[str]:
+    def view_aliases_small(self, table: str) -> list[str]:
         """View all aliases in a smaller table. Returned as a list of alias strings."""
         aliases = self.budget_manager.get_all_aliases(table)
         result: list[str] = []
@@ -1116,7 +1116,7 @@ class BudgetTrackerCLI:
         except Exception as e:
             self.console.print(f"[red]❌ Error re-indexing: {e}[/red]")
 
-    def ask_confirmation(self, yes = "Yes", no = "No") -> bool:
+    def ask_confirmation(self, yes: str = "Yes", no: str = "No") -> bool:
         """Ask yes-no confirmation."""
         while True:
             self.console.print("\n[bold red]Are you sure?[/bold red]")

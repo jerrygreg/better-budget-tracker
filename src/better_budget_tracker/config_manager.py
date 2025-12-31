@@ -48,7 +48,7 @@ class ConfigManager:
 
         self.config_log += self.display_config()
 
-    def display_config(self):
+    def display_config(self) -> str:
         return "\n".join(
             [f"Using {self.config.reports_dir}",
              f"Using {self.config.data_dir}",

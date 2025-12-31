@@ -338,6 +338,7 @@ def get_common_goal_categories() -> List[str]:
     ]
 
 Category_invalid_characters = "!,"
+"""The invalid characters used for income and expenses input"""
 def validate_category(category: str) -> bool:
     """
     Validate category name.
@@ -362,6 +363,7 @@ def validate_category(category: str) -> bool:
     return True
 
 Alias_invalid_characters = Category_invalid_characters
+"""The invalid characters used for aliases. A superset of ``Category_invalid_characters``"""
 def validate_alias(alias: str) -> bool:
     """
     Validate alias name.

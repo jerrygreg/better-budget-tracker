@@ -20,7 +20,7 @@ from better_budget_tracker.utils import format_currency, format_date, format_per
 class ReportGenerator:
     """Generates various reports and visualizations for budget tracking."""
     
-    def __init__(self, budget_manager: BudgetManager, goal_tracker: GoalTracker, reports_dir):
+    def __init__(self, budget_manager: BudgetManager, goal_tracker: GoalTracker, reports_dir: str):
         """
         Initialize the report generator.
         
@@ -33,7 +33,7 @@ class ReportGenerator:
         self.reports_dir = reports_dir
         self._ensure_reports_directory(reports_dir)
     
-    def _ensure_reports_directory(self,reports_dir) -> None:
+    def _ensure_reports_directory(self, reports_dir: str) -> None:
         """Ensure the reports directory exists."""
         os.makedirs(reports_dir, exist_ok=True)
     
